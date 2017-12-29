@@ -3,12 +3,14 @@ package p2p
 import (
 	"net"
 	"consensus"
+	"errors"
+	"github.com/sirupsen/logrus"
 )
 
 // Peer is a participant of p2p network
 type Peer struct {
 	conn net.Conn
-	hand handshake
+	hand hand
 
 	// Info connected peer
 	Info struct{
@@ -30,19 +32,34 @@ type Peer struct {
 // NewPeer connects to peer
 func NewPeer(addr string) (*Peer, error) {
 
-	conn, err := net.Dial("tcp", addr)
+	logrus.Info("start new peer")
+	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		return nil, err
 	}
 
-	hand, err := hand(conn)
+	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
 		return nil, err
+	}
+
+	logrus.Info("peer connected")
+	hand, err := handshake(conn)
+	if err != nil {
+		return nil, err
+	}
+
+	if hand.Version != protocolVersion {
+		return nil, errors.New("incompatibility protocol version")
 	}
 
 	p := new(Peer)
 	p.conn = conn
-	p.hand = hand
+	p.Info.Version = hand.Version
+	p.Info.Capabilities = hand.Capabilities
+	p.Info.TotalDifficulty = hand.TotalDifficulty
+	p.Info.Addr = hand.SenderAddr
+	p.Info.UserAgent = hand.UserAgent
 
 	return p, nil
 }

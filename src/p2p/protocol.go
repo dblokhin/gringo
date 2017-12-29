@@ -2,41 +2,37 @@ package p2p
 
 import (
 	"io"
-	"bytes"
 	"encoding/binary"
 )
 
 // Magic code expected in the header of every message
-var magicCode = [2]uint8{0x1e, 0xc5}
+var magicCode = [2]byte{0x1e, 0xc5}
 
 const (
 	// protocolVersion version of grin p2p protocol
 	protocolVersion uint32 = 1
 
 	// Size in bytes of a message header
-	headerLen uint64 = 11
+	headerLen int64 = 11
 
 	// userAgent is name of version of the software
 	userAgent = "gringo v0.0.1"
 )
 
-// messageType type of p2p protocol message
-type messageType int
-
 // Types of p2p messages
 const (
-	MsgError        messageType = iota
-	MsgHand
-	MsgShake
-	MsgPing
-	MsgPong
-	MsgGetPeerAddrs
-	MsgPeerAddrs
-	MsgGetHeaders
-	MsgHeaders
-	MsgGetBlock
-	MsgBlock
-	MsgTransaction
+	msgTypeError        uint8 = iota
+	msgTypeHand
+	msgTypeShake
+	msgTypePing
+	msgTypePong
+	msgTypeGetPeerAddrs
+	msgTypePeerAddrs
+	msgTypeGetHeaders
+	msgTypeHeaders
+	msgTypeGetBlock
+	msgTypeBlock
+	msgTypeTransaction
 )
 
 // errCodes type
@@ -64,32 +60,40 @@ const (
 // msgHeader is header of any protocol message, used to identify incoming messages
 type msgHeader struct {
 	// magic number
-	magic [2]uint8
+	magic [2]byte
 	// msgType typo of the message.
-	msgType messageType
+	msgType uint8
 	// msgLen length of the message in bytes.
-	msgLen uint64
+	msgLen int64
 }
 
-// msgBody is body of any protocol message
-type msgBody interface {
-	Len() uint64
-	Write(writer io.Writer) error
-}
-
-func sendMessage(conn io.Writer, mType messageType, body msgBody) error {
-	header := msgHeader{
-		magic:   magicCode,
-		msgType: mType,
-		msgLen:  body.Len(),
+func (h msgHeader) Write(wr io.Writer) error {
+	if _, err := wr.Write(h.magic[:]); err != nil {
+		return err
 	}
-
-	if err := binary.Write(conn, binary.BigEndian, header); err != nil {
+	if err := binary.Write(wr, binary.BigEndian, h.msgType); err != nil {
 		return err
 	}
 
-	return body.Write(conn)
+	return binary.Write(wr, binary.BigEndian, h.msgLen)
 }
+
+
+/*
+msgError        uint32 = iota
+	msgHand
+	msgShake
+	msgPing
+	msgPong
+	msgGetPeerAddrs
+	msgPeerAddrs
+	msgGetHeaders
+	msgHeaders
+	msgGetBlock
+	msgBlock
+	msgTransaction
+
+ */
 
 
 type Protocol interface {

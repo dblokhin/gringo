@@ -3,10 +3,13 @@ package p2p
 import (
 	"net"
 	"consensus"
+	"encoding/binary"
+	"bytes"
+	"github.com/sirupsen/logrus"
 )
 
-// handshake by sender advertises its version and characteristics.
-type handshake struct {
+// hand by sender advertises its version and characteristics.
+type hand struct {
 	// protocol version of the sender
 	Version         uint32
 	// capabilities of the sender
@@ -17,13 +20,112 @@ type handshake struct {
 	// may be needed
 	TotalDifficulty consensus.Difficulty
 	// network address of the sender
-	SenderAddr      uint32	// SockAddr
-	ReceiverAddr    uint32
+	SenderAddr      *net.TCPAddr
+	ReceiverAddr    *net.TCPAddr
 
 	// name of version of the software
 	UserAgent       string
 }
 
-func hand(conn net.Conn) (handshake, error){
-	sendMessage(conn, MsgHand, )
+func (h hand) Bytes() []byte {
+	logrus.Info("hand struct to bytes")
+	buff := new(bytes.Buffer)
+
+	if err := binary.Write(buff, binary.BigEndian, h.Version); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if err := binary.Write(buff, binary.BigEndian, uint32(h.Capabilities)); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if err := binary.Write(buff, binary.BigEndian, h.Nonce); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if err := binary.Write(buff, binary.BigEndian, uint64(h.TotalDifficulty)); err != nil {
+		logrus.Fatal(err)
+	}
+
+	// Write Sender addr
+	switch len(h.SenderAddr.IP) {
+	case net.IPv4len: {
+		if _, err := buff.Write([]byte{0}); err != nil {
+			logrus.Fatal(err)
+		}
+	}
+	case net.IPv6len: {
+		if _, err := buff.Write([]byte{1}); err != nil {
+			logrus.Fatal(err)
+		}
+	}
+	default:
+		logrus.Fatal("invalid netaddr")
+	}
+
+	if _, err := buff.Write(h.SenderAddr.IP); err != nil {
+		logrus.Fatal(err)
+	}
+
+	binary.Write(buff, binary.BigEndian, uint16(h.SenderAddr.Port))
+
+	// Write Recv addr
+	switch len(h.ReceiverAddr.IP) {
+	case net.IPv4len: {
+		if _, err := buff.Write([]byte{0}); err != nil {
+			logrus.Fatal(err)
+		}
+	}
+	case net.IPv6len: {
+		if _, err := buff.Write([]byte{1}); err != nil {
+			logrus.Fatal(err)
+		}
+	}
+	default:
+		logrus.Fatal("invalid netaddr")
+	}
+
+	if _, err := buff.Write(h.ReceiverAddr.IP); err != nil {
+		logrus.Fatal(err)
+	}
+	binary.Write(buff, binary.BigEndian, uint16(h.ReceiverAddr.Port))
+
+	// Write user agent [len][string]
+	binary.Write(buff, binary.BigEndian, uint64(len(h.UserAgent)))
+	buff.WriteString(h.UserAgent)
+
+	return buff.Bytes()
+}
+
+func handshake(conn net.Conn) (*hand, error) {
+
+	logrus.Info("start peer handshake")
+	// create handshake
+	sender := conn.LocalAddr().(*net.TCPAddr)
+	receiver := conn.RemoteAddr().(*net.TCPAddr)
+	nonce := uint64(1)
+
+	msg := hand {
+		Version: protocolVersion,
+		Capabilities: fullNode,
+		Nonce: nonce,
+		TotalDifficulty: consensus.Difficulty(1),
+		SenderAddr: sender,
+		ReceiverAddr: receiver,
+		UserAgent: userAgent,
+	}
+
+	logrus.Info("send hand to peer")
+	// Send own hand
+	if err := writeMessage(conn, msgTypeHand, msg.Bytes()); err != nil {
+		return nil, err
+	}
+
+	logrus.Info("recv hand from peer")
+	// Read peer hand
+	if err := readMessage(conn, &msg); err != nil {
+		return nil, err
+	}
+
+	return &msg, nil
 }
