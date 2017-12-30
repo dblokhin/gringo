@@ -2,36 +2,24 @@ package p2p
 
 import (
 	"io"
-	"encoding/binary"
-	"github.com/sirupsen/logrus"
 	"bufio"
-	"os"
+	"github.com/sirupsen/logrus"
 )
 
 // writeMessage writes to wr (net.conn) protocol message
 func writeMessage(w io.Writer, mType uint8, body []byte) error {
-	logrus.Debug("write message to stream:")
 	header := msgHeader{
 		magic:   magicCode,
 		msgType: mType,
-		msgLen:  int64(len(body)),
+		msgLen:  uint64(len(body)),
 	}
-
-	// duplicate
-	f, _ := os.Create("log")
-	defer f.Close()
-	w = io.MultiWriter(w, f)
-
 
 	// use the buffered writer
 	wr := bufio.NewWriter(w)
-	logrus.Debug("write header to stream")
-
 	if err := header.Write(wr); err != nil {
 		return err
 	}
 
-	logrus.Debug("write body to stream")
 	if _, err := wr.Write(body); err != nil {
 		return err
 	}
@@ -40,15 +28,16 @@ func writeMessage(w io.Writer, mType uint8, body []byte) error {
 }
 
 // readMessage reads from r (net.conn) protocol message
-func readMessage(r io.Reader, data interface{}) error {
+func readMessage(r io.Reader, body structReader) error {
 	var header msgHeader
 
+	// get the msg header
 	rh := io.LimitReader(r, headerLen)
-	if err := binary.Read(rh, binary.BigEndian, header); err != nil {
+	if err := header.Read(rh); err != nil {
 		return err
 	}
+	logrus.Debug("readed header: ", header)
 
-	// TODO: what if data capacity is less than header.msgLen
-	rb := io.LimitReader(r, header.msgLen)
-	return binary.Read(rb, binary.BigEndian, data)
+	rb := io.LimitReader(r, int64(header.msgLen))
+	return body.Read(rb)
 }

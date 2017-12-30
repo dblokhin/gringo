@@ -3,7 +3,6 @@ package p2p
 import (
 	"net"
 	"consensus"
-	"errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -21,8 +20,6 @@ type Peer struct {
 		// total difficulty accumulated by the sender, used to check whether sync
 		// may be needed
 		TotalDifficulty consensus.Difficulty
-		// network address of the sender
-		Addr      		net.Addr	// SockAddr
 		// name of version of the software
 		UserAgent       string
 	}
@@ -44,28 +41,27 @@ func NewPeer(addr string) (*Peer, error) {
 	}
 
 	logrus.Info("peer connected")
-	hand, err := handshake(conn)
+	shake, err := handshake(conn)
 	if err != nil {
 		return nil, err
 	}
 
-	if hand.Version != protocolVersion {
-		return nil, errors.New("incompatibility protocol version")
-	}
-
 	p := new(Peer)
 	p.conn = conn
-	p.Info.Version = hand.Version
-	p.Info.Capabilities = hand.Capabilities
-	p.Info.TotalDifficulty = hand.TotalDifficulty
-	p.Info.Addr = hand.SenderAddr
-	p.Info.UserAgent = hand.UserAgent
+	p.Info.Version = shake.Version
+	p.Info.Capabilities = shake.Capabilities
+	p.Info.TotalDifficulty = shake.TotalDifficulty
+	p.Info.UserAgent = shake.UserAgent
 
 	return p, nil
 }
 
-/*func (p Peer) Write(b []byte) (n int, err error) {
+func (p Peer) Write(b []byte) (n int, err error) {
 	return p.conn.Write(b)
-}*/
+}
+
+func (p Peer) Read(b []byte) (n int, err error) {
+	return p.conn.Read(b)
+}
 
 

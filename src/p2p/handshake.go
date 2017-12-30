@@ -6,9 +6,12 @@ import (
 	"encoding/binary"
 	"bytes"
 	"github.com/sirupsen/logrus"
+	"io"
+	"errors"
 )
 
-// hand by sender advertises its version and characteristics.
+// First part of a handshake, sender advertises its version and
+// characteristics.
 type hand struct {
 	// protocol version of the sender
 	Version         uint32
@@ -97,7 +100,99 @@ func (h hand) Bytes() []byte {
 	return buff.Bytes()
 }
 
-func handshake(conn net.Conn) (*hand, error) {
+// Second part of a handshake, receiver of the first part replies with its own
+// version and characteristics.
+type shake struct {
+	// protocol version of the sender
+	Version         uint32
+	// capabilities of the sender
+	Capabilities    capabilities
+	// total difficulty accumulated by the sender, used to check whether sync
+	// may be needed
+	TotalDifficulty consensus.Difficulty
+
+	// name of version of the software
+	UserAgent       string
+}
+
+func (h *shake) Read(r io.Reader) error {
+
+	if err := binary.Read(r, binary.BigEndian, &h.Version); err != nil {
+		return err
+	}
+
+	if h.Version != protocolVersion {
+		return errors.New("incompatibility protocol version")
+	}
+
+	if err := binary.Read(r, binary.BigEndian, (*uint32)(&h.Capabilities)); err != nil {
+		return err
+	}
+
+	if err := binary.Read(r, binary.BigEndian, (*uint64)(&h.TotalDifficulty)); err != nil {
+		return err
+	}
+
+	/*
+	Read Sender addr example, but in Handshakes answer it doesnt present now
+
+	var ipFlag uint8
+	var ipPort uint16
+	ipv4 := make([]byte, net.IPv4len)
+	ipv6 := make([]byte, net.IPv6len)
+
+	if err := binary.Read(r, binary.BigEndian, &ipFlag); err != nil {
+		return err
+	}
+
+	logrus.Debug("read ipFlag: ", ipFlag)
+	switch ipFlag {
+	case 0: {
+		if _, err := io.ReadFull(r, ipv4); err != nil {
+			return err
+		}
+
+		logrus.Debug("read ipv4: ", ipv4)
+		h.SenderAddr.IP = ipv4
+	}
+	case 1: {
+		if _, err := io.ReadFull(r, ipv6); err != nil {
+			return err
+		}
+
+		h.SenderAddr.IP = ipv6
+	}
+	default:
+		return errors.New("unexpected IP value")
+	}
+
+	if err := binary.Read(r, binary.BigEndian, &ipPort); err != nil {
+		return err
+	}
+	h.SenderAddr.Port = int(ipPort)*/
+
+	var userAgentLen uint64
+	if err := binary.Read(r, binary.BigEndian, &userAgentLen); err != nil {
+		return err
+	}
+
+	logrus.Debug("userAgentlen: ", userAgentLen)
+
+	if userAgentLen > 1024 {
+		logrus.Warn("too big userAgent len value")
+		return errors.New("invalid userAgent len value")
+	}
+
+	buff := make([]byte, userAgentLen)
+	if _, err := io.ReadFull(r, buff); err != nil {
+		return err
+	}
+
+	h.UserAgent = string(buff)
+	return nil
+}
+
+func handshake(conn net.Conn) (*shake, error) {
 
 	logrus.Info("start peer handshake")
 	// create handshake
@@ -121,11 +216,14 @@ func handshake(conn net.Conn) (*hand, error) {
 		return nil, err
 	}
 
-	logrus.Info("recv hand from peer")
-	// Read peer hand
-	if err := readMessage(conn, &msg); err != nil {
+	logrus.Info("recv shake from peer")
+
+	// Read peer shake
+	sh := new(shake)
+	if err := readMessage(conn, sh); err != nil {
 		return nil, err
 	}
+	logrus.Debug(sh)
 
-	return &msg, nil
+	return sh, nil
 }

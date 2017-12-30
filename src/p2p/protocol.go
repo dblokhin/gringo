@@ -64,10 +64,10 @@ type msgHeader struct {
 	// msgType typo of the message.
 	msgType uint8
 	// msgLen length of the message in bytes.
-	msgLen int64
+	msgLen uint64
 }
 
-func (h msgHeader) Write(wr io.Writer) error {
+func (h *msgHeader) Write(wr io.Writer) error {
 	if _, err := wr.Write(h.magic[:]); err != nil {
 		return err
 	}
@@ -78,6 +78,17 @@ func (h msgHeader) Write(wr io.Writer) error {
 	return binary.Write(wr, binary.BigEndian, h.msgLen)
 }
 
+func (h *msgHeader) Read(r io.Reader) error {
+	if _, err := io.ReadFull(r, h.magic[:]); err != nil {
+		return err
+	}
+
+	if err := binary.Read(r, binary.BigEndian, &h.msgType); err != nil {
+		return err
+	}
+
+	return binary.Read(r, binary.BigEndian, &h.msgLen)
+}
 
 /*
 msgError        uint32 = iota
@@ -93,8 +104,11 @@ msgError        uint32 = iota
 	msgBlock
 	msgTransaction
 
- */
+*/
 
+type structReader interface {
+	Read(r io.Reader) error
+}
 
 type Protocol interface {
 	sendMsg(reader io.Reader)
