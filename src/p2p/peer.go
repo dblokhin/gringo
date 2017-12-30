@@ -23,7 +23,6 @@ type Peer struct {
 		// name of version of the software
 		UserAgent       string
 	}
-
 }
 
 // NewPeer connects to peer

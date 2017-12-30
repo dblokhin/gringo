@@ -3,6 +3,7 @@ package p2p
 import (
 	"io"
 	"encoding/binary"
+	"errors"
 )
 
 // Magic code expected in the header of every message
@@ -83,11 +84,19 @@ func (h *msgHeader) Read(r io.Reader) error {
 		return err
 	}
 
+	if !h.ValidateMagic() {
+		return errors.New("invalid magic code")
+	}
+
 	if err := binary.Read(r, binary.BigEndian, &h.msgType); err != nil {
 		return err
 	}
 
 	return binary.Read(r, binary.BigEndian, &h.msgLen)
+}
+
+func (h *msgHeader) ValidateMagic() bool {
+	return h.magic[0] == 0x1e && h.magic[1] == 0xc5
 }
 
 /*
