@@ -133,44 +133,6 @@ func (h *shake) Read(r io.Reader) error {
 		return err
 	}
 
-	/*
-	Read Sender addr example, but in Handshakes answer it doesnt present now
-
-	var ipFlag uint8
-	var ipPort uint16
-	ipv4 := make([]byte, net.IPv4len)
-	ipv6 := make([]byte, net.IPv6len)
-
-	if err := binary.Read(r, binary.BigEndian, &ipFlag); err != nil {
-		return err
-	}
-
-	logrus.Debug("read ipFlag: ", ipFlag)
-	switch ipFlag {
-	case 0: {
-		if _, err := io.ReadFull(r, ipv4); err != nil {
-			return err
-		}
-
-		logrus.Debug("read ipv4: ", ipv4)
-		h.SenderAddr.IP = ipv4
-	}
-	case 1: {
-		if _, err := io.ReadFull(r, ipv6); err != nil {
-			return err
-		}
-
-		h.SenderAddr.IP = ipv6
-	}
-	default:
-		return errors.New("unexpected IP value")
-	}
-
-	if err := binary.Read(r, binary.BigEndian, &ipPort); err != nil {
-		return err
-	}
-	h.SenderAddr.Port = int(ipPort)*/
-
 	var userAgentLen uint64
 	if err := binary.Read(r, binary.BigEndian, &userAgentLen); err != nil {
 		return err
@@ -178,7 +140,7 @@ func (h *shake) Read(r io.Reader) error {
 
 	logrus.Debug("userAgentlen: ", userAgentLen)
 
-	if userAgentLen > 1024 {
+	if userAgentLen > maxUserAgentLength {
 		logrus.Warn("too big userAgent len value")
 		return errors.New("invalid userAgent len value")
 	}

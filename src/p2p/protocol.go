@@ -18,6 +18,7 @@ const (
 
 	// userAgent is name of version of the software
 	userAgent = "gringo v0.0.1"
+	maxUserAgentLength = 1024
 )
 
 // Types of p2p messages
