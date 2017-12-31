@@ -14,20 +14,20 @@ import (
 // characteristics.
 type hand struct {
 	// protocol version of the sender
-	Version         uint32
+	Version uint32
 	// capabilities of the sender
-	Capabilities    capabilities
+	Capabilities capabilities
 	// randomly generated for each handshake, helps detect self
-	Nonce           uint64
+	Nonce uint64
 	// total difficulty accumulated by the sender, used to check whether sync
 	// may be needed
 	TotalDifficulty consensus.Difficulty
 	// network address of the sender
-	SenderAddr      *net.TCPAddr
-	ReceiverAddr    *net.TCPAddr
+	SenderAddr   *net.TCPAddr
+	ReceiverAddr *net.TCPAddr
 
 	// name of version of the software
-	UserAgent       string
+	UserAgent string
 }
 
 func (h hand) Bytes() []byte {
@@ -52,16 +52,18 @@ func (h hand) Bytes() []byte {
 
 	// Write Sender addr
 	switch len(h.SenderAddr.IP) {
-	case net.IPv4len: {
-		if _, err := buff.Write([]byte{0}); err != nil {
-			logrus.Fatal(err)
+	case net.IPv4len:
+		{
+			if _, err := buff.Write([]byte{0}); err != nil {
+				logrus.Fatal(err)
+			}
 		}
-	}
-	case net.IPv6len: {
-		if _, err := buff.Write([]byte{1}); err != nil {
-			logrus.Fatal(err)
+	case net.IPv6len:
+		{
+			if _, err := buff.Write([]byte{1}); err != nil {
+				logrus.Fatal(err)
+			}
 		}
-	}
 	default:
 		logrus.Fatal("invalid netaddr")
 	}
@@ -74,16 +76,18 @@ func (h hand) Bytes() []byte {
 
 	// Write Recv addr
 	switch len(h.ReceiverAddr.IP) {
-	case net.IPv4len: {
-		if _, err := buff.Write([]byte{0}); err != nil {
-			logrus.Fatal(err)
+	case net.IPv4len:
+		{
+			if _, err := buff.Write([]byte{0}); err != nil {
+				logrus.Fatal(err)
+			}
 		}
-	}
-	case net.IPv6len: {
-		if _, err := buff.Write([]byte{1}); err != nil {
-			logrus.Fatal(err)
+	case net.IPv6len:
+		{
+			if _, err := buff.Write([]byte{1}); err != nil {
+				logrus.Fatal(err)
+			}
 		}
-	}
 	default:
 		logrus.Fatal("invalid netaddr")
 	}
@@ -104,15 +108,15 @@ func (h hand) Bytes() []byte {
 // version and characteristics.
 type shake struct {
 	// protocol version of the sender
-	Version         uint32
+	Version uint32
 	// capabilities of the sender
-	Capabilities    capabilities
+	Capabilities capabilities
 	// total difficulty accumulated by the sender, used to check whether sync
 	// may be needed
 	TotalDifficulty consensus.Difficulty
 
 	// name of version of the software
-	UserAgent       string
+	UserAgent string
 }
 
 func (h *shake) Read(r io.Reader) error {
@@ -162,14 +166,14 @@ func handshake(conn net.Conn) (*shake, error) {
 	receiver := conn.RemoteAddr().(*net.TCPAddr)
 	nonce := uint64(1)
 
-	msg := hand {
-		Version: protocolVersion,
-		Capabilities: fullNode,
-		Nonce: nonce,
+	msg := hand{
+		Version:         protocolVersion,
+		Capabilities:    fullNode,
+		Nonce:           nonce,
 		TotalDifficulty: consensus.Difficulty(1),
-		SenderAddr: sender,
-		ReceiverAddr: receiver,
-		UserAgent: userAgent,
+		SenderAddr:      sender,
+		ReceiverAddr:    receiver,
+		UserAgent:       userAgent,
 	}
 
 	logrus.Info("send hand to peer")
@@ -182,10 +186,10 @@ func handshake(conn net.Conn) (*shake, error) {
 
 	// Read peer shake
 	sh := new(shake)
-	if err := readMessage(conn, sh); err != nil {
+	if err := readMessage(conn, msgTypeShake, sh); err != nil {
 		return nil, err
 	}
-	logrus.Debug(sh)
+	logrus.Debug("receive shake: ", sh)
 
 	return sh, nil
 }
