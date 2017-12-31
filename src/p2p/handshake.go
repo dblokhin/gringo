@@ -104,6 +104,10 @@ func (h hand) Bytes() []byte {
 	return buff.Bytes()
 }
 
+func (h hand) Type() uint8 {
+	return msgTypeHand
+}
+
 // Second part of a handshake, receiver of the first part replies with its own
 // version and characteristics.
 type shake struct {
@@ -178,15 +182,16 @@ func handshake(conn net.Conn) (*shake, error) {
 
 	logrus.Info("send hand to peer")
 	// Send own hand
-	if err := writeMessage(conn, msgTypeHand, msg.Bytes()); err != nil {
+	if err := WriteMessage(conn, msg); err != nil {
 		return nil, err
 	}
 
 	logrus.Info("recv shake from peer")
 
 	// Read peer shake
+	// TODO: check nonce
 	sh := new(shake)
-	if err := readMessage(conn, msgTypeShake, sh); err != nil {
+	if err := ReadMessage(conn, msgTypeShake, sh); err != nil {
 		return nil, err
 	}
 	logrus.Debug("receive shake: ", sh)

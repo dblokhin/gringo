@@ -7,12 +7,22 @@ import (
 	"errors"
 )
 
-// writeMessage writes to wr (net.conn) protocol message
-func writeMessage(w io.Writer, mType uint8, body []byte) error {
+// SendableMessage defines methods for WriteMessage function
+type SendableMessage interface {
+	// Bytes returns binary data of body message
+	Bytes() []byte
+	// Type says whats the message type should use in header
+	Type() uint8
+}
+
+// WriteMessage writes to wr (net.conn) protocol message
+func WriteMessage(w io.Writer, msg SendableMessage) error {
+	data := msg.Bytes()
+
 	header := msgHeader{
 		magic:   magicCode,
-		msgType: mType,
-		msgLen:  uint64(len(body)),
+		msgType: msg.Type(),
+		msgLen:  uint64(len(data)),
 	}
 
 	// use the buffered writer
@@ -21,15 +31,15 @@ func writeMessage(w io.Writer, mType uint8, body []byte) error {
 		return err
 	}
 
-	if _, err := wr.Write(body); err != nil {
+	if _, err := wr.Write(data); err != nil {
 		return err
 	}
 
 	return wr.Flush()
 }
 
-// readMessage reads from r (net.conn) protocol message
-func readMessage(r io.Reader, expectedType uint8, body structReader) error {
+// ReadMessage reads from r (net.conn) protocol message
+func ReadMessage(r io.Reader, expectedType uint8, body structReader) error {
 	var header msgHeader
 
 	// get the msg header

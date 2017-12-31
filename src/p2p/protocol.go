@@ -17,7 +17,7 @@ const (
 	headerLen int64 = 11
 
 	// userAgent is name of version of the software
-	userAgent = "gringo v0.0.1"
+	userAgent          = "gringo v0.0.1"
 	maxUserAgentLength = 1024
 )
 
@@ -99,22 +99,6 @@ func (h *msgHeader) Read(r io.Reader) error {
 func (h *msgHeader) ValidateMagic() bool {
 	return h.magic[0] == 0x1e && h.magic[1] == 0xc5
 }
-
-/*
-msgError        uint32 = iota
-	msgHand
-	msgShake
-	msgPing
-	msgPong
-	msgGetPeerAddrs
-	msgPeerAddrs
-	msgGetHeaders
-	msgHeaders
-	msgGetBlock
-	msgBlock
-	msgTransaction
-
-*/
 
 type structReader interface {
 	Read(r io.Reader) error

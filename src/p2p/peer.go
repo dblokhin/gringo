@@ -4,6 +4,9 @@ import (
 	"net"
 	"consensus"
 	"github.com/sirupsen/logrus"
+	"bufio"
+	"io"
+	"errors"
 )
 
 // Peer is a participant of p2p network
@@ -12,16 +15,16 @@ type Peer struct {
 	hand hand
 
 	// Info connected peer
-	Info struct{
+	Info struct {
 		// protocol version of the sender
-		Version         uint32
+		Version uint32
 		// capabilities of the sender
-		Capabilities    capabilities
+		Capabilities capabilities
 		// total difficulty accumulated by the sender, used to check whether sync
 		// may be needed
 		TotalDifficulty consensus.Difficulty
 		// name of version of the software
-		UserAgent       string
+		UserAgent string
 	}
 }
 
@@ -55,12 +58,12 @@ func NewPeer(addr string) (*Peer, error) {
 	return p, nil
 }
 
+// Write implements io.Writer
 func (p Peer) Write(b []byte) (n int, err error) {
 	return p.conn.Write(b)
 }
 
+// Read implements io.Reader
 func (p Peer) Read(b []byte) (n int, err error) {
 	return p.conn.Read(b)
 }
-
-
