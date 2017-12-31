@@ -55,6 +55,10 @@ func NewPeer(addr string) (*Peer, error) {
 	return p, nil
 }
 
+func (p Peer) HandleLoop() error {
+	return HandleLoop(p.conn)
+}
+
 func (p Peer) Close() error {
 	return p.conn.Close()
 }
