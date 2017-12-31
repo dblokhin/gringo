@@ -4,9 +4,6 @@ import (
 	"net"
 	"consensus"
 	"github.com/sirupsen/logrus"
-	"bufio"
-	"io"
-	"errors"
 )
 
 // Peer is a participant of p2p network
@@ -58,12 +55,6 @@ func NewPeer(addr string) (*Peer, error) {
 	return p, nil
 }
 
-// Write implements io.Writer
-func (p Peer) Write(b []byte) (n int, err error) {
-	return p.conn.Write(b)
-}
-
-// Read implements io.Reader
-func (p Peer) Read(b []byte) (n int, err error) {
-	return p.conn.Read(b)
+func (p Peer) Close() error {
+	return p.conn.Close()
 }

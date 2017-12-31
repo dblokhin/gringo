@@ -162,6 +162,10 @@ func (h *shake) Read(r io.Reader) error {
 	return nil
 }
 
+func (h *shake) Type() uint8 {
+	return msgTypeShake
+}
+
 func handshake(conn net.Conn) (*shake, error) {
 
 	logrus.Info("start peer handshake")
@@ -191,7 +195,7 @@ func handshake(conn net.Conn) (*shake, error) {
 	// Read peer shake
 	// TODO: check nonce
 	sh := new(shake)
-	if err := ReadMessage(conn, msgTypeShake, sh); err != nil {
+	if err := ReadMessage(conn, sh); err != nil {
 		return nil, err
 	}
 	logrus.Debug("receive shake: ", sh)

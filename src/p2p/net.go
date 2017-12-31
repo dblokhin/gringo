@@ -15,6 +15,14 @@ type SendableMessage interface {
 	Type() uint8
 }
 
+// ReadableMessage defines methods for ReadMessage function
+type ReadableMessage interface {
+	Read(r io.Reader) error
+
+	//expected type of receiving message
+	Type() uint8
+}
+
 // WriteMessage writes to wr (net.conn) protocol message
 func WriteMessage(w io.Writer, msg SendableMessage) error {
 	data := msg.Bytes()
@@ -39,7 +47,7 @@ func WriteMessage(w io.Writer, msg SendableMessage) error {
 }
 
 // ReadMessage reads from r (net.conn) protocol message
-func ReadMessage(r io.Reader, expectedType uint8, body structReader) error {
+func ReadMessage(r io.Reader, msg ReadableMessage) error {
 	var header msgHeader
 
 	// get the msg header
@@ -49,10 +57,10 @@ func ReadMessage(r io.Reader, expectedType uint8, body structReader) error {
 	}
 	logrus.Debug("readed header: ", header)
 
-	if header.msgType != expectedType {
+	if header.msgType != msg.Type() {
 		return errors.New("receive unexpected message type")
 	}
 
 	rb := io.LimitReader(r, int64(header.msgLen))
-	return body.Read(rb)
+	return msg.Read(rb)
 }

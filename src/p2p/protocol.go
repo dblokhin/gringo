@@ -13,12 +13,13 @@ const (
 	// protocolVersion version of grin p2p protocol
 	protocolVersion uint32 = 1
 
-	// Size in bytes of a message header
+	// size in bytes of a message header
 	headerLen int64 = 11
 
 	// userAgent is name of version of the software
 	userAgent          = "gringo v0.0.1"
 	maxUserAgentLength = 1024
+	maxMessageSize = 1024 * 1024 * 20	// TODO: check this for reality
 )
 
 // Types of p2p messages
@@ -98,10 +99,6 @@ func (h *msgHeader) Read(r io.Reader) error {
 
 func (h *msgHeader) ValidateMagic() bool {
 	return h.magic[0] == 0x1e && h.magic[1] == 0xc5
-}
-
-type structReader interface {
-	Read(r io.Reader) error
 }
 
 type Protocol interface {
