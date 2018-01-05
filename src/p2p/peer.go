@@ -90,6 +90,7 @@ func (p *Peer) HandleLoop() error {
 			p.Info.TotalDifficulty = msg.TotalDifficulty
 			p.Info.Height = msg.Height
 
+			logrus.Debug("received ping: ", msg)
 			// send pong
 			// TODO: send actual blockchain state
 			var resp pong
@@ -99,7 +100,7 @@ func (p *Peer) HandleLoop() error {
 
 		case msgTypePong:
 			// update peer info
-			var msg ping
+			var msg pong
 			if err := msg.Read(rl); err != nil {
 				return err
 			}
@@ -107,13 +108,23 @@ func (p *Peer) HandleLoop() error {
 			// update info
 			p.Info.TotalDifficulty = msg.TotalDifficulty
 			p.Info.Height = msg.Height
+
+			logrus.Debug("received pong: ", msg)
+
 		case msgTypeGetPeerAddrs:
+			logrus.Info("received msgTypeGetPeerAddrs")
 		case msgTypePeerAddrs:
+			logrus.Info("received msgTypePeerAddrs")
 		case msgTypeGetHeaders:
+			logrus.Info("received msgTypeGetHeaders")
 		case msgTypeHeaders:
+			logrus.Info("received msgTypeHeaders")
 		case msgTypeGetBlock:
+			logrus.Info("received msgTypeGetBlock")
 		case msgTypeBlock:
+			logrus.Info("received msgTypeBlock")
 		case msgTypeTransaction:
+			logrus.Info("received msgTypeTransaction")
 
 		default:
 			return errors.New("receive unexpected message (type) from peer")
@@ -121,6 +132,16 @@ func (p *Peer) HandleLoop() error {
 	}
 }
 
+// Close peer
 func (p Peer) Close() error {
 	return p.conn.Close()
+}
+
+// SendPing sends ping request to peer
+func (p Peer) SendPing() error {
+	var request ping
+	request.TotalDifficulty = consensus.Difficulty(1)
+	request.Height = 1
+
+	return WriteMessage(p.conn, request)
 }
