@@ -4,6 +4,7 @@ import (
 	"io"
 	"encoding/binary"
 	"errors"
+	"github.com/sirupsen/logrus"
 )
 
 // Magic code expected in the header of every message
@@ -86,6 +87,8 @@ func (h *msgHeader) Read(r io.Reader) error {
 		return err
 	}
 
+	logrus.Debug("readed magic: ", h.magic[:])
+
 	if !h.ValidateMagic() {
 		return errors.New("invalid magic code")
 	}
@@ -97,8 +100,20 @@ func (h *msgHeader) Read(r io.Reader) error {
 	return binary.Read(r, binary.BigEndian, &h.msgLen)
 }
 
-func (h *msgHeader) ValidateMagic() bool {
+func (h msgHeader) ValidateMagic() bool {
 	return h.magic[0] == 0x1e && h.magic[1] == 0xc5
+}
+
+func expectedResponse(requestType uint8) uint8 {
+	switch requestType {
+	case msgTypePing: return msgTypePong
+	case msgTypeGetPeerAddrs: return msgTypePeerAddrs
+	case msgTypeGetHeaders: return msgTypeHeaders
+	case msgTypeGetBlock: return msgTypeBlock
+	case msgTypeHand: return msgTypeShake
+	}
+
+	return msgTypeError
 }
 
 type Protocol interface {

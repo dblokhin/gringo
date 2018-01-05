@@ -5,7 +5,6 @@ import (
 	"bufio"
 	"github.com/sirupsen/logrus"
 	"errors"
-	"net"
 )
 
 // SendableMessage defines methods for WriteMessage function
@@ -64,36 +63,4 @@ func ReadMessage(r io.Reader, msg ReadableMessage) error {
 
 	rb := io.LimitReader(r, int64(header.msgLen))
 	return msg.Read(rb)
-}
-
-// HandleLoop starts event loop listening
-func HandleLoop(conn net.Conn) error {
-	input := bufio.NewReader(conn)
-
-	for {
-		header := new(msgHeader)
-		if err := header.Read(input); err != nil {
-			return err
-		}
-		logrus.Debug("receive header: ", header)
-
-		if header.msgLen > maxMessageSize {
-			return errors.New("too big message size")
-		}
-
-		switch header.msgType {
-		case msgTypePing: // send pong
-		case msgTypePong: // nothing
-		case msgTypeGetPeerAddrs:
-		case msgTypePeerAddrs:
-		case msgTypeGetHeaders:
-		case msgTypeHeaders:
-		case msgTypeGetBlock:
-		case msgTypeBlock:
-		case msgTypeTransaction:
-
-		default:
-			return errors.New("receive unexpected message (type) from peer")
-		}
-	}
 }
