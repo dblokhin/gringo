@@ -2,9 +2,6 @@ package p2p
 
 import (
 	"io"
-	"encoding/binary"
-	"errors"
-	"github.com/sirupsen/logrus"
 )
 
 // Magic code expected in the header of every message
@@ -61,49 +58,6 @@ const (
 	fullNode = fullHist | utxoHist | peerList
 )
 
-// msgHeader is header of any protocol message, used to identify incoming messages
-type msgHeader struct {
-	// magic number
-	magic [2]byte
-	// msgType typo of the message.
-	msgType uint8
-	// msgLen length of the message in bytes.
-	msgLen uint64
-}
-
-func (h *msgHeader) Write(wr io.Writer) error {
-	if _, err := wr.Write(h.magic[:]); err != nil {
-		return err
-	}
-	if err := binary.Write(wr, binary.BigEndian, h.msgType); err != nil {
-		return err
-	}
-
-	return binary.Write(wr, binary.BigEndian, h.msgLen)
-}
-
-func (h *msgHeader) Read(r io.Reader) error {
-	if _, err := io.ReadFull(r, h.magic[:]); err != nil {
-		return err
-	}
-
-	logrus.Debug("readed magic: ", h.magic[:])
-
-	if !h.ValidateMagic() {
-		return errors.New("invalid magic code")
-	}
-
-	if err := binary.Read(r, binary.BigEndian, &h.msgType); err != nil {
-		return err
-	}
-
-	return binary.Read(r, binary.BigEndian, &h.msgLen)
-}
-
-func (h msgHeader) ValidateMagic() bool {
-	return h.magic[0] == 0x1e && h.magic[1] == 0xc5
-}
-
 func expectedResponse(requestType uint8) uint8 {
 	switch requestType {
 	case msgTypePing: return msgTypePong
@@ -123,7 +77,7 @@ type Protocol interface {
 	// transmittedBytes bytes sent and received
 	transmittedBytes() uint64
 
-	// sendPing sends a ping message to the remote peer. Will panic if handle has never
+	// sendPing sends a Ping message to the remote peer. Will panic if handle has never
 	// been called on this protocol.
 	sendPing()
 

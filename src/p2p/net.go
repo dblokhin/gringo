@@ -27,10 +27,10 @@ type ReadableMessage interface {
 func WriteMessage(w io.Writer, msg SendableMessage) error {
 	data := msg.Bytes()
 
-	header := msgHeader{
-		magic:   magicCode,
-		msgType: msg.Type(),
-		msgLen:  uint64(len(data)),
+	header := Header{
+		magic: magicCode,
+		Type:  msg.Type(),
+		Len:   uint64(len(data)),
 	}
 
 	// use the buffered writer
@@ -48,7 +48,7 @@ func WriteMessage(w io.Writer, msg SendableMessage) error {
 
 // ReadMessage reads from r (net.conn) protocol message
 func ReadMessage(r io.Reader, msg ReadableMessage) error {
-	var header msgHeader
+	var header Header
 
 	// get the msg header
 	rh := io.LimitReader(r, headerLen)
@@ -57,10 +57,10 @@ func ReadMessage(r io.Reader, msg ReadableMessage) error {
 	}
 	logrus.Debug("readed header: ", header)
 
-	if header.msgType != msg.Type() {
+	if header.Type != msg.Type() {
 		return errors.New("receive unexpected message type")
 	}
 
-	rb := io.LimitReader(r, int64(header.msgLen))
+	rb := io.LimitReader(r, int64(header.Len))
 	return msg.Read(rb)
 }

@@ -63,7 +63,7 @@ func NewPeer(addr string) (*Peer, error) {
 // HandleLoop starts event loop listening
 func (p *Peer) HandleLoop() error {
 	input := bufio.NewReader(p.conn)
-	header := new(msgHeader)
+	header := new(Header)
 
 	for {
 		if err := header.Read(input); err != nil {
@@ -71,17 +71,17 @@ func (p *Peer) HandleLoop() error {
 		}
 		logrus.Debug("received header: ", header)
 
-		if header.msgLen > maxMessageSize {
+		if header.Len > maxMessageSize {
 			return errors.New("too big message size")
 		}
 
 		// limit read
-		rl := io.LimitReader(input, int64(header.msgLen))
+		rl := io.LimitReader(input, int64(header.Len))
 
-		switch header.msgType {
+		switch header.Type {
 		case msgTypePing:
-			// update peer info & send pong
-			var msg ping
+			// update peer info & send Pong
+			var msg Ping
 			if err := msg.Read(rl); err != nil {
 				return err
 			}
@@ -90,17 +90,17 @@ func (p *Peer) HandleLoop() error {
 			p.Info.TotalDifficulty = msg.TotalDifficulty
 			p.Info.Height = msg.Height
 
-			logrus.Debug("received ping: ", msg)
-			// send pong
+			logrus.Debug("received Ping: ", msg)
+			// send Pong
 			// TODO: send actual blockchain state
-			var resp pong
+			var resp Pong
 			resp.TotalDifficulty = consensus.Difficulty(1)
 			resp.Height = 1
 			WriteMessage(p.conn, resp)
 
 		case msgTypePong:
 			// update peer info
-			var msg pong
+			var msg Pong
 			if err := msg.Read(rl); err != nil {
 				return err
 			}
@@ -109,7 +109,7 @@ func (p *Peer) HandleLoop() error {
 			p.Info.TotalDifficulty = msg.TotalDifficulty
 			p.Info.Height = msg.Height
 
-			logrus.Debug("received pong: ", msg)
+			logrus.Debug("received Pong: ", msg)
 
 		case msgTypeGetPeerAddrs:
 			logrus.Info("received msgTypeGetPeerAddrs")
@@ -137,9 +137,9 @@ func (p Peer) Close() error {
 	return p.conn.Close()
 }
 
-// SendPing sends ping request to peer
+// SendPing sends Ping request to peer
 func (p Peer) SendPing() error {
-	var request ping
+	var request Ping
 	request.TotalDifficulty = consensus.Difficulty(1)
 	request.Height = 1
 
