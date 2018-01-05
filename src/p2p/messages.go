@@ -7,6 +7,7 @@ import (
 	"consensus"
 	"bytes"
 	"net"
+	"errors"
 )
 
 // Header is header of any protocol message, used to identify incoming messages
@@ -123,6 +124,11 @@ func (p GetPeerAddrs) Type() uint8 {
 	return msgTypeGetPeerAddrs
 }
 
+func (p *GetPeerAddrs) Read(r io.Reader) error {
+
+	return binary.Read(r, binary.BigEndian, (*uint32)(&p.Capabilities))
+}
+
 // Sending an error back (usually followed  by closing conn)
 type PeerError struct {
 	// error code
@@ -149,6 +155,32 @@ func (p PeerError) Bytes() []byte {
 
 func (p PeerError) Type() uint8 {
 	return msgTypeError
+}
+
+func (p *PeerError) Read(r io.Reader) error {
+
+	if err := binary.Read(r, binary.BigEndian, (*uint32)(&p.Code)); err != nil {
+		return err
+	}
+
+	var messageLen uint64
+	if err := binary.Read(r, binary.BigEndian, &messageLen); err != nil {
+		return err
+	}
+
+	logrus.Debug("messageLen: ", messageLen)
+	if messageLen > maxStringLength {
+		logrus.Warn("too big messageLen len value")
+		return errors.New("invalid messageLen len value")
+	}
+
+	buff := make([]byte, messageLen)
+	if _, err := io.ReadFull(r, buff); err != nil {
+		return err
+	}
+
+	p.Message = string(buff)
+	return nil
 }
 
 // PeerAddrs we know of that are fresh enough, in response to GetPeerAddrs
@@ -195,4 +227,53 @@ func (p PeerAddrs) Bytes() []byte {
 
 func (p PeerAddrs) Type() uint8 {
 	return msgTypePeerAddrs
+}
+
+func (p *PeerAddrs) Read(r io.Reader) error {
+
+	var peersCount uint32
+	var ipFlag int8
+
+	if err := binary.Read(r, binary.BigEndian, &peersCount); err != nil {
+		return err
+	}
+
+	if peersCount > maxPeerAddresses {
+		logrus.Warn("too big peersCount value")
+		return errors.New("invalid peersCount value")
+	}
+
+	for i := uint32(0); i < peersCount; i++ {
+		if err := binary.Read(r, binary.BigEndian, &ipFlag); err != nil {
+			return err
+		}
+
+		var ipAddr []byte
+		var ipPort uint16
+
+		if ipFlag == 0 {
+			// for ipv4 addr
+			ipAddr = make([]byte, net.IPv4len)
+		} else {
+			// for ipv6 addr
+			ipAddr = make([]byte, net.IPv6len)
+		}
+
+		if _, err := io.ReadFull(r, ipAddr); err != nil {
+			return err
+		}
+
+		if err := binary.Read(r, binary.BigEndian, &ipPort); err != nil {
+			return err
+		}
+
+		addr := &net.TCPAddr{
+			IP: ipAddr,
+			Port: int(ipPort),
+		}
+
+		p.peers = append(p.peers, addr)
+	}
+
+	return nil
 }

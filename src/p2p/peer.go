@@ -96,7 +96,10 @@ func (p *Peer) HandleLoop() error {
 			var resp Pong
 			resp.TotalDifficulty = consensus.Difficulty(1)
 			resp.Height = 1
-			WriteMessage(p.conn, resp)
+
+			if err := WriteMessage(p.conn, resp); err != nil {
+				return err
+			}
 
 		case msgTypePong:
 			// update peer info
@@ -112,7 +115,18 @@ func (p *Peer) HandleLoop() error {
 			logrus.Debug("received Pong: ", msg)
 
 		case msgTypeGetPeerAddrs:
+			var msg GetPeerAddrs
+			if err := msg.Read(rl); err != nil {
+				return err
+			}
 			logrus.Info("received msgTypeGetPeerAddrs")
+
+			// Send answer
+			var resp PeerAddrs
+			if err := WriteMessage(p.conn, resp); err != nil {
+				return err
+			}
+
 		case msgTypePeerAddrs:
 			logrus.Info("received msgTypePeerAddrs")
 		case msgTypeGetHeaders:

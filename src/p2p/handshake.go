@@ -148,7 +148,7 @@ func (h *shake) Read(r io.Reader) error {
 
 	logrus.Debug("userAgentlen: ", userAgentLen)
 
-	if userAgentLen > maxUserAgentLength {
+	if userAgentLen > maxStringLength {
 		logrus.Warn("too big userAgent len value")
 		return errors.New("invalid userAgent len value")
 	}
