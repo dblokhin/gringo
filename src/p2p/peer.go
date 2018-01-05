@@ -128,6 +128,10 @@ func (p *Peer) HandleLoop() error {
 			}
 
 		case msgTypePeerAddrs:
+			var msg PeerAddrs
+			if err := msg.Read(rl); err != nil {
+				return err
+			}
 			logrus.Info("received msgTypePeerAddrs")
 		case msgTypeGetHeaders:
 			logrus.Info("received msgTypeGetHeaders")

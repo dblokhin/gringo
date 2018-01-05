@@ -1,7 +1,7 @@
 package p2p
 
 import (
-	"io"
+
 )
 
 // Magic code expected in the header of every message
@@ -60,36 +60,21 @@ const (
 	fullNode = fullHist | utxoHist | peerList
 )
 
-func expectedResponse(requestType uint8) uint8 {
-	switch requestType {
-	case msgTypePing: return msgTypePong
-	case msgTypeGetPeerAddrs: return msgTypePeerAddrs
-	case msgTypeGetHeaders: return msgTypeHeaders
-	case msgTypeGetBlock: return msgTypeBlock
-	case msgTypeHand: return msgTypeShake
-	}
-
-	return msgTypeError
-}
-
 type Protocol interface {
-	sendMsg(reader io.Reader)
-	sendRequest(reader io.Reader)
+	// TransmittedBytes bytes sent and received
+	// TransmittedBytes() uint64
 
-	// transmittedBytes bytes sent and received
-	transmittedBytes() uint64
-
-	// sendPing sends a Ping message to the remote peer. Will panic if handle has never
+	// SendPing sends a Ping message to the remote peer. Will panic if handle has never
 	// been called on this protocol.
-	sendPing()
+	SendPing()
 
-	// sendBlock sends a block to our remote peer
-	sendBlock()
-	sendTransaction()
-	sendHeaderRequest()
-	sendBlockRequest()
-	sendPeerRequest()
+	// SendBlock sends a block to our remote peer
+	SendBlock()
+	SendTransaction()
+	SendHeaderRequest()
+	SendBlockRequest()
+	SendPeerRequest()
 
-	// close the connection to the remote peer
-	close()
+	// Close the connection to the remote peer
+	Close()
 }
