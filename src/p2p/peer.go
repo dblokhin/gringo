@@ -19,7 +19,7 @@ type Peer struct {
 		// protocol version of the sender
 		Version uint32
 		// capabilities of the sender
-		Capabilities capabilities
+		Capabilities consensus.Capabilities
 		// total difficulty accumulated by the sender, used to check whether sync
 		// may be needed
 		TotalDifficulty consensus.Difficulty
@@ -79,7 +79,7 @@ func (p *Peer) HandleLoop() error {
 		rl := io.LimitReader(input, int64(header.Len))
 
 		switch header.Type {
-		case msgTypePing:
+		case consensus.MsgTypePing:
 			// update peer info & send Pong
 			var msg Ping
 			if err := msg.Read(rl); err != nil {
@@ -101,7 +101,7 @@ func (p *Peer) HandleLoop() error {
 				return err
 			}
 
-		case msgTypePong:
+		case consensus.MsgTypePong:
 			// update peer info
 			var msg Pong
 			if err := msg.Read(rl); err != nil {
@@ -114,7 +114,7 @@ func (p *Peer) HandleLoop() error {
 
 			logrus.Debug("received Pong: ", msg)
 
-		case msgTypeGetPeerAddrs:
+		case consensus.MsgTypeGetPeerAddrs:
 			var msg GetPeerAddrs
 			if err := msg.Read(rl); err != nil {
 				return err
@@ -127,21 +127,21 @@ func (p *Peer) HandleLoop() error {
 				return err
 			}
 
-		case msgTypePeerAddrs:
+		case consensus.MsgTypePeerAddrs:
 			var msg PeerAddrs
 			if err := msg.Read(rl); err != nil {
 				return err
 			}
 			logrus.Info("received msgTypePeerAddrs")
-		case msgTypeGetHeaders:
+		case consensus.MsgTypeGetHeaders:
 			logrus.Info("received msgTypeGetHeaders")
-		case msgTypeHeaders:
+		case consensus.MsgTypeHeaders:
 			logrus.Info("received msgTypeHeaders")
-		case msgTypeGetBlock:
+		case consensus.MsgTypeGetBlock:
 			logrus.Info("received msgTypeGetBlock")
-		case msgTypeBlock:
+		case consensus.MsgTypeBlock:
 			logrus.Info("received msgTypeBlock")
-		case msgTypeTransaction:
+		case consensus.MsgTypeTransaction:
 			logrus.Info("received msgTypeTransaction")
 
 		default:

@@ -15,8 +15,8 @@ import (
 type hand struct {
 	// protocol version of the sender
 	Version uint32
-	// capabilities of the sender
-	Capabilities capabilities
+	// Capabilities of the sender
+	Capabilities consensus.Capabilities
 	// randomly generated for each handshake, helps detect self
 	Nonce uint64
 	// total difficulty accumulated by the sender, used to check whether sync
@@ -105,7 +105,7 @@ func (h hand) Bytes() []byte {
 }
 
 func (h hand) Type() uint8 {
-	return msgTypeHand
+	return consensus.MsgTypeHand
 }
 
 // Second part of a handshake, receiver of the first part replies with its own
@@ -114,7 +114,7 @@ type shake struct {
 	// protocol version of the sender
 	Version uint32
 	// capabilities of the sender
-	Capabilities capabilities
+	Capabilities consensus.Capabilities
 	// total difficulty accumulated by the sender, used to check whether sync
 	// may be needed
 	TotalDifficulty consensus.Difficulty
@@ -129,7 +129,7 @@ func (h *shake) Read(r io.Reader) error {
 		return err
 	}
 
-	if h.Version != protocolVersion {
+	if h.Version != consensus.ProtocolVersion {
 		return errors.New("incompatibility protocol version")
 	}
 
@@ -158,7 +158,7 @@ func (h *shake) Read(r io.Reader) error {
 }
 
 func (h *shake) Type() uint8 {
-	return msgTypeShake
+	return consensus.MsgTypeShake
 }
 
 func handshake(conn net.Conn) (*shake, error) {
@@ -170,8 +170,8 @@ func handshake(conn net.Conn) (*shake, error) {
 	nonce := uint64(1)
 
 	msg := hand{
-		Version:         protocolVersion,
-		Capabilities:    fullNode,
+		Version:         consensus.ProtocolVersion,
+		Capabilities:    consensus.CapFullNode,
 		Nonce:           nonce,
 		TotalDifficulty: consensus.Difficulty(1),
 		SenderAddr:      sender,

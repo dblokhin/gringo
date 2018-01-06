@@ -29,7 +29,7 @@ func WriteMessage(w io.Writer, msg SendableMessage) error {
 	data := msg.Bytes()
 
 	header := Header{
-		magic: magicCode,
+		magic: consensus.MagicCode,
 		Type:  msg.Type(),
 		Len:   uint64(len(data)),
 	}
@@ -52,7 +52,7 @@ func ReadMessage(r io.Reader, msg ReadableMessage) error {
 	var header Header
 
 	// get the msg header
-	rh := io.LimitReader(r, headerLen)
+	rh := io.LimitReader(r, consensus.HeaderLen)
 	if err := header.Read(rh); err != nil {
 		return err
 	}

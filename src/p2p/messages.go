@@ -83,7 +83,7 @@ func (p Ping) Bytes() []byte {
 
 // Type implements SendableMessage/ReadableMessage interface
 func (p Ping) Type() uint8 {
-	return msgTypePing
+	return consensus.MsgTypePing
 }
 
 // Read implements ReadableMessage interface
@@ -103,13 +103,13 @@ type Pong struct {
 
 // Type implements SendableMessage/ReadableMessage interface
 func (p Pong) Type() uint8 {
-	return msgTypePong
+	return consensus.MsgTypePong
 }
 
 // GetPeerAddrs asks for other peers addresses, required for network discovery.
 type GetPeerAddrs struct {
 	// filters on the capabilities we'd like the peers to have
-	Capabilities capabilities
+	Capabilities consensus.Capabilities
 }
 
 // Bytes implements SendableMessage interface
@@ -126,7 +126,7 @@ func (p GetPeerAddrs) Bytes() []byte {
 
 // Type implements SendableMessage/ReadableMessage interface
 func (p GetPeerAddrs) Type() uint8 {
-	return msgTypeGetPeerAddrs
+	return consensus.MsgTypeGetPeerAddrs
 }
 
 // Read implements ReadableMessage interface
@@ -162,7 +162,7 @@ func (p PeerError) Bytes() []byte {
 
 // Type implements SendableMessage/ReadableMessage interface
 func (p PeerError) Type() uint8 {
-	return msgTypeError
+	return consensus.MsgTypeError
 }
 
 // Read implements ReadableMessage interface
@@ -233,7 +233,7 @@ func (p PeerAddrs) Bytes() []byte {
 
 // Type implements SendableMessage/ReadableMessage interface
 func (p PeerAddrs) Type() uint8 {
-	return msgTypePeerAddrs
+	return consensus.MsgTypePeerAddrs
 }
 
 // Read implements ReadableMessage interface

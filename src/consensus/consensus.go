@@ -46,10 +46,6 @@ const (
 	// easier to reason about.
 	CutThroughHorizon uint32 = 48 * 3600 / uint32(BlockTimeSec)
 
-	// The maximum size we're willing to accept for any message. Enforced by the
-	// peer-to-peer networking layer only for DoS protection.
-	MaxMsgLen uint64 = 20000000
-
 	// Weight of an input when counted against the max block weigth capacity
 	BlockInputWeight uint32 = 1
 
