@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"github.com/sirupsen/logrus"
 	"errors"
+	"consensus"
 )
 
 // SendableMessage defines methods for WriteMessage function
@@ -55,10 +56,14 @@ func ReadMessage(r io.Reader, msg ReadableMessage) error {
 	if err := header.Read(rh); err != nil {
 		return err
 	}
-	logrus.Debug("readed header: ", header)
+	logrus.Debug("got header: ", header)
 
 	if header.Type != msg.Type() {
 		return errors.New("receive unexpected message type")
+	}
+
+	if header.Len > consensus.MaxMsgLen {
+		return errors.New("too big message size")
 	}
 
 	rb := io.LimitReader(r, int64(header.Len))

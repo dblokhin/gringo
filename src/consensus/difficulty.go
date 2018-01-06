@@ -4,7 +4,7 @@ package consensus
 type Difficulty uint64
 
 func (d Difficulty) Minimum() Difficulty {
-	return Difficulty(MINIMUM_DIFFICULTY)
+	return Difficulty(MinimumDifficulty)
 }
 
 func (d Difficulty) FromNum(num uint64) Difficulty {

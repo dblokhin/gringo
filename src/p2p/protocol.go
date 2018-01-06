@@ -19,7 +19,6 @@ const (
 	maxStringLength = 1024 * 10
 	// maxPeerAddresses in PeerAddrs resp
 	maxPeerAddresses = 1024 * 10
-	maxMessageSize  = 1024 * 1024 * 20	// TODO: check this for reality
 )
 
 // Types of p2p messages
@@ -60,6 +59,7 @@ const (
 	fullNode = fullHist | utxoHist | peerList
 )
 
+// Protocol defines grin-node network communicates
 type Protocol interface {
 	// TransmittedBytes bytes sent and received
 	// TransmittedBytes() uint64

@@ -71,7 +71,7 @@ func (p *Peer) HandleLoop() error {
 		}
 		logrus.Debug("received header: ", header)
 
-		if header.Len > maxMessageSize {
+		if header.Len > consensus.MaxMsgLen {
 			return errors.New("too big message size")
 		}
 

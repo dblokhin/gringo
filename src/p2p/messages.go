@@ -20,6 +20,7 @@ type Header struct {
 	Len uint64
 }
 
+// Write writes header as binary data to writer
 func (h *Header) Write(wr io.Writer) error {
 	if _, err := wr.Write(h.magic[:]); err != nil {
 		return err
@@ -31,14 +32,15 @@ func (h *Header) Write(wr io.Writer) error {
 	return binary.Write(wr, binary.BigEndian, h.Len)
 }
 
+// Read reads from reader & fill struct
 func (h *Header) Read(r io.Reader) error {
 	if _, err := io.ReadFull(r, h.magic[:]); err != nil {
 		return err
 	}
 
-	logrus.Debug("readed magic: ", h.magic[:])
+	logrus.Debug("got magic: ", h.magic[:])
 
-	if !h.ValidateMagic() {
+	if !h.validateMagic() {
 		return errors.New("invalid magic code")
 	}
 
@@ -49,7 +51,8 @@ func (h *Header) Read(r io.Reader) error {
 	return binary.Read(r, binary.BigEndian, &h.Len)
 }
 
-func (h Header) ValidateMagic() bool {
+// validateMagic verifies magic code
+func (h Header) validateMagic() bool {
 	return h.magic[0] == 0x1e && h.magic[1] == 0xc5
 }
 
@@ -62,6 +65,7 @@ type Ping struct {
 	Height uint64
 }
 
+// Bytes implements SendableMessage interface
 func (p Ping) Bytes() []byte {
 	logrus.Info("Ping/Pong struct to bytes")
 	buff := new(bytes.Buffer)
@@ -77,21 +81,19 @@ func (p Ping) Bytes() []byte {
 	return buff.Bytes()
 }
 
+// Type implements SendableMessage/ReadableMessage interface
 func (p Ping) Type() uint8 {
 	return msgTypePing
 }
 
+// Read implements ReadableMessage interface
 func (p *Ping) Read(r io.Reader) error {
 
 	if err := binary.Read(r, binary.BigEndian, (*uint64)(&p.TotalDifficulty)); err != nil {
 		return err
 	}
 
-	if err := binary.Read(r, binary.BigEndian, (*uint64)(&p.Height)); err != nil {
-		return err
-	}
-
-	return nil
+	return binary.Read(r, binary.BigEndian, (*uint64)(&p.Height))
 }
 
 // Pong response same as Ping
@@ -99,16 +101,18 @@ type Pong struct {
 	Ping
 }
 
+// Type implements SendableMessage/ReadableMessage interface
 func (p Pong) Type() uint8 {
 	return msgTypePong
 }
 
-// Ask for other peers addresses, required for network discovery.
+// GetPeerAddrs asks for other peers addresses, required for network discovery.
 type GetPeerAddrs struct {
 	// filters on the capabilities we'd like the peers to have
 	Capabilities capabilities
 }
 
+// Bytes implements SendableMessage interface
 func (p GetPeerAddrs) Bytes() []byte {
 	logrus.Info("GetPeerAddrs struct to bytes")
 	buff := new(bytes.Buffer)
@@ -120,16 +124,18 @@ func (p GetPeerAddrs) Bytes() []byte {
 	return buff.Bytes()
 }
 
+// Type implements SendableMessage/ReadableMessage interface
 func (p GetPeerAddrs) Type() uint8 {
 	return msgTypeGetPeerAddrs
 }
 
+// Read implements ReadableMessage interface
 func (p *GetPeerAddrs) Read(r io.Reader) error {
 
 	return binary.Read(r, binary.BigEndian, (*uint32)(&p.Capabilities))
 }
 
-// Sending an error back (usually followed  by closing conn)
+// PeerError sending an error back (usually followed  by closing conn)
 type PeerError struct {
 	// error code
 	Code uint32
@@ -137,6 +143,7 @@ type PeerError struct {
 	Message string
 }
 
+// Bytes implements SendableMessage interface
 func (p PeerError) Bytes() []byte {
 	logrus.Info("GetPeerAddrs struct to bytes")
 	buff := new(bytes.Buffer)
@@ -153,10 +160,12 @@ func (p PeerError) Bytes() []byte {
 	return buff.Bytes()
 }
 
+// Type implements SendableMessage/ReadableMessage interface
 func (p PeerError) Type() uint8 {
 	return msgTypeError
 }
 
+// Read implements ReadableMessage interface
 func (p *PeerError) Read(r io.Reader) error {
 
 	if err := binary.Read(r, binary.BigEndian, (*uint32)(&p.Code)); err != nil {
@@ -188,6 +197,7 @@ type PeerAddrs struct {
 	peers []*net.TCPAddr
 }
 
+// Bytes implements SendableMessage interface
 func (p PeerAddrs) Bytes() []byte {
 	logrus.Info("GetPeerAddrs struct to bytes")
 	buff := new(bytes.Buffer)
@@ -225,10 +235,12 @@ func (p PeerAddrs) Bytes() []byte {
 	return buff.Bytes()
 }
 
+// Type implements SendableMessage/ReadableMessage interface
 func (p PeerAddrs) Type() uint8 {
 	return msgTypePeerAddrs
 }
 
+// Read implements ReadableMessage interface
 func (p *PeerAddrs) Read(r io.Reader) error {
 
 	var peersCount uint32
