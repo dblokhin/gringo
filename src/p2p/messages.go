@@ -178,10 +178,6 @@ func (p *PeerError) Read(r io.Reader) error {
 	}
 
 	logrus.Debug("messageLen: ", messageLen)
-	if messageLen > maxStringLength {
-		logrus.Warn("too big messageLen len value")
-		return errors.New("invalid messageLen len value")
-	}
 
 	buff := make([]byte, messageLen)
 	if _, err := io.ReadFull(r, buff); err != nil {
@@ -248,11 +244,6 @@ func (p *PeerAddrs) Read(r io.Reader) error {
 
 	if err := binary.Read(r, binary.BigEndian, &peersCount); err != nil {
 		return err
-	}
-
-	if peersCount > maxPeerAddresses {
-		logrus.Warn("too big peersCount value")
-		return errors.New("invalid peersCount value")
 	}
 
 	for i := uint32(0); i < peersCount; i++ {
