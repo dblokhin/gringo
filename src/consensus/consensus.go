@@ -17,7 +17,7 @@ const (
 	NanoGrin uint64 = 1
 
 	// The block subsidy amount
-	Reward uint64 = 50 * GrinBase
+	Reward uint64 = 60 * GrinBase
 
 	// Number of blocks before a coinbase matures and can be spent
 	CoinbaseMaturity uint64 = 1000
