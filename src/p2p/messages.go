@@ -65,8 +65,8 @@ type Ping struct {
 	Height uint64
 }
 
-// Bytes implements SendableMessage interface
-func (p Ping) Bytes() []byte {
+// Bytes implements Message interface
+func (p *Ping) Bytes() []byte {
 	logrus.Info("Ping/Pong struct to bytes")
 	buff := new(bytes.Buffer)
 
@@ -81,12 +81,12 @@ func (p Ping) Bytes() []byte {
 	return buff.Bytes()
 }
 
-// Type implements SendableMessage/ReadableMessage interface
-func (p Ping) Type() uint8 {
+// Type implements Message interface
+func (p *Ping) Type() uint8 {
 	return consensus.MsgTypePing
 }
 
-// Read implements ReadableMessage interface
+// Read implements Message interface
 func (p *Ping) Read(r io.Reader) error {
 
 	if err := binary.Read(r, binary.BigEndian, (*uint64)(&p.TotalDifficulty)); err != nil {
@@ -101,8 +101,8 @@ type Pong struct {
 	Ping
 }
 
-// Type implements SendableMessage/ReadableMessage interface
-func (p Pong) Type() uint8 {
+// Type implements Messagee interface
+func (p *Pong) Type() uint8 {
 	return consensus.MsgTypePong
 }
 
@@ -112,8 +112,8 @@ type GetPeerAddrs struct {
 	Capabilities consensus.Capabilities
 }
 
-// Bytes implements SendableMessage interface
-func (p GetPeerAddrs) Bytes() []byte {
+// Bytes implements Message interface
+func (p *GetPeerAddrs) Bytes() []byte {
 	logrus.Info("GetPeerAddrs struct to bytes")
 	buff := new(bytes.Buffer)
 
@@ -124,12 +124,12 @@ func (p GetPeerAddrs) Bytes() []byte {
 	return buff.Bytes()
 }
 
-// Type implements SendableMessage/ReadableMessage interface
-func (p GetPeerAddrs) Type() uint8 {
+// Type implements Message interface
+func (p *GetPeerAddrs) Type() uint8 {
 	return consensus.MsgTypeGetPeerAddrs
 }
 
-// Read implements ReadableMessage interface
+// Read implements Message interface
 func (p *GetPeerAddrs) Read(r io.Reader) error {
 
 	return binary.Read(r, binary.BigEndian, (*uint32)(&p.Capabilities))
@@ -143,8 +143,8 @@ type PeerError struct {
 	Message string
 }
 
-// Bytes implements SendableMessage interface
-func (p PeerError) Bytes() []byte {
+// Bytes implements Message interface
+func (p *PeerError) Bytes() []byte {
 	logrus.Info("GetPeerAddrs struct to bytes")
 	buff := new(bytes.Buffer)
 
@@ -160,12 +160,12 @@ func (p PeerError) Bytes() []byte {
 	return buff.Bytes()
 }
 
-// Type implements SendableMessage/ReadableMessage interface
-func (p PeerError) Type() uint8 {
+// Type implements Message interface
+func (p *PeerError) Type() uint8 {
 	return consensus.MsgTypeError
 }
 
-// Read implements ReadableMessage interface
+// Read implements Message interface
 func (p *PeerError) Read(r io.Reader) error {
 
 	if err := binary.Read(r, binary.BigEndian, (*uint32)(&p.Code)); err != nil {
@@ -193,8 +193,8 @@ type PeerAddrs struct {
 	peers []*net.TCPAddr
 }
 
-// Bytes implements SendableMessage interface
-func (p PeerAddrs) Bytes() []byte {
+// Bytes implements Message interface
+func (p *PeerAddrs) Bytes() []byte {
 	logrus.Info("GetPeerAddrs struct to bytes")
 	buff := new(bytes.Buffer)
 
@@ -231,12 +231,12 @@ func (p PeerAddrs) Bytes() []byte {
 	return buff.Bytes()
 }
 
-// Type implements SendableMessage/ReadableMessage interface
-func (p PeerAddrs) Type() uint8 {
+// Type implements Message interface
+func (p *PeerAddrs) Type() uint8 {
 	return consensus.MsgTypePeerAddrs
 }
 
-// Read implements ReadableMessage interface
+// Read implements Message interface
 func (p *PeerAddrs) Read(r io.Reader) error {
 
 	var peersCount uint32

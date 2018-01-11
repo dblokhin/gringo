@@ -30,7 +30,7 @@ type hand struct {
 	UserAgent string
 }
 
-func (h hand) Bytes() []byte {
+func (h *hand) Bytes() []byte {
 	logrus.Info("hand struct to bytes")
 	buff := new(bytes.Buffer)
 
@@ -104,7 +104,7 @@ func (h hand) Bytes() []byte {
 	return buff.Bytes()
 }
 
-func (h hand) Type() uint8 {
+func (h *hand) Type() uint8 {
 	return consensus.MsgTypeHand
 }
 
@@ -218,7 +218,7 @@ type shake struct {
 	UserAgent string
 }
 
-func (h shake) Bytes() []byte {
+func (h *shake) Bytes() []byte {
 	logrus.Info("shake struct to bytes")
 	buff := new(bytes.Buffer)
 
@@ -241,7 +241,7 @@ func (h shake) Bytes() []byte {
 	return buff.Bytes()
 }
 
-func (h shake) Type() uint8 {
+func (h *shake) Type() uint8 {
 	return consensus.MsgTypeShake
 }
 
@@ -288,7 +288,7 @@ func shakeByHand(conn net.Conn) (*shake, error) {
 	receiver := conn.RemoteAddr().(*net.TCPAddr)
 	nonce := uint64(1)
 
-	msg := hand{
+	msg := hand {
 		Version:         consensus.ProtocolVersion,
 		Capabilities:    consensus.CapFullNode,
 		Nonce:           nonce,
@@ -300,7 +300,7 @@ func shakeByHand(conn net.Conn) (*shake, error) {
 
 	logrus.Info("send hand to peer")
 	// Send own hand
-	if _, err := WriteMessage(conn, msg); err != nil {
+	if _, err := WriteMessage(conn, &msg); err != nil {
 		return nil, err
 	}
 
@@ -331,14 +331,14 @@ func handByShake(conn net.Conn) (*hand, error) {
 
 	// Read peer shake
 	// TODO: check nonce
-	sh := shake {
+	msg := shake {
 		Version: consensus.ProtocolVersion,
 		Capabilities: consensus.CapFullNode,
 		TotalDifficulty: consensus.Difficulty(1),
 		UserAgent: userAgent,
 
 	}
-	if _, err := WriteMessage(conn, sh); err != nil {
+	if _, err := WriteMessage(conn, &msg); err != nil {
 		return nil, err
 	}
 

@@ -23,7 +23,7 @@ type Peer struct {
 	wg        sync.WaitGroup
 
 	// Queue for sending message
-	sendQueue chan SendableMessage
+	sendQueue chan Message
 
 	// disconnect flag
 	disconnect int32
@@ -69,7 +69,7 @@ func NewPeer(addr string) (*Peer, error) {
 	p := new(Peer)
 	p.conn = conn
 	p.quit = make(chan struct{})
-	p.sendQueue = make(chan SendableMessage)
+	p.sendQueue = make(chan Message)
 
 	p.Info.Version = shake.Version
 	p.Info.Capabilities = shake.Capabilities
@@ -91,7 +91,7 @@ func AcceptNewPeer(conn net.Conn) (*Peer, error) {
 	p := new(Peer)
 	p.conn = conn
 	p.quit = make(chan struct{})
-	p.sendQueue = make(chan SendableMessage)
+	p.sendQueue = make(chan Message)
 
 	p.Info.Version = hand.Version
 	p.Info.Capabilities = hand.Capabilities
@@ -135,7 +135,7 @@ out:
 }
 
 // queueMessage places msg to send queue
-func (p Peer) queueMessage(msg SendableMessage) {
+func (p Peer) queueMessage(msg Message) {
 	select {
 	case <-p.quit: logrus.Info("cannot send message, peer is shutting down")
 	case p.sendQueue <- msg:
@@ -184,7 +184,7 @@ out:
 			var resp Pong
 			resp.TotalDifficulty = consensus.Difficulty(1)
 			resp.Height = 1
-			p.queueMessage(resp)
+			p.queueMessage(&resp)
 
 		case consensus.MsgTypePong:
 			// update peer info
@@ -208,7 +208,7 @@ out:
 
 			// Send answer
 			var resp PeerAddrs
-			p.queueMessage(resp)
+			p.queueMessage(&resp)
 
 		case consensus.MsgTypePeerAddrs:
 			var msg PeerAddrs
@@ -264,5 +264,5 @@ func (p Peer) SendPing() {
 	request.TotalDifficulty = consensus.Difficulty(1)
 	request.Height = 1
 
-	p.queueMessage(request)
+	p.queueMessage(&request)
 }
