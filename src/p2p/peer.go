@@ -97,11 +97,11 @@ out:
 	for {
 		select {
 		case msg := <-p.sendQueue:
-			if exitError = WriteMessage(p.conn, msg); exitError != nil {
+			var written uint64
+			if written, exitError = WriteMessage(p.conn, msg); exitError != nil {
 				break out
 			}
-			// FIXME: msg.Bytes() call is not eficient
-			atomic.AddUint64(&p.bytesSent, uint64(len(msg.Bytes()))+consensus.HeaderLen)
+			atomic.AddUint64(&p.bytesSent, written)
 		case <-p.quit:
 			exitError = errors.New("peer exiting")
 			break out

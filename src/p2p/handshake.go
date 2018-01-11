@@ -181,7 +181,7 @@ func handshake(conn net.Conn) (*shake, error) {
 
 	logrus.Info("send hand to peer")
 	// Send own hand
-	if err := WriteMessage(conn, msg); err != nil {
+	if _, err := WriteMessage(conn, msg); err != nil {
 		return nil, err
 	}
 
@@ -190,7 +190,7 @@ func handshake(conn net.Conn) (*shake, error) {
 	// Read peer shake
 	// TODO: check nonce
 	sh := new(shake)
-	if err := ReadMessage(conn, sh); err != nil {
+	if _, err := ReadMessage(conn, sh); err != nil {
 		return nil, err
 	}
 	logrus.Debug("receive shake: ", sh)

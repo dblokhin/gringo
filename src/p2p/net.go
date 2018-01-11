@@ -25,7 +25,7 @@ type ReadableMessage interface {
 }
 
 // WriteMessage writes to wr (net.conn) protocol message
-func WriteMessage(w io.Writer, msg SendableMessage) error {
+func WriteMessage(w io.Writer, msg SendableMessage) (uint64, error) {
 	data := msg.Bytes()
 
 	header := Header{
@@ -37,35 +37,35 @@ func WriteMessage(w io.Writer, msg SendableMessage) error {
 	// use the buffered writer
 	wr := bufio.NewWriter(w)
 	if err := header.Write(wr); err != nil {
-		return err
+		return 0, err
 	}
 
-	if _, err := wr.Write(data); err != nil {
-		return err
+	if n, err := wr.Write(data); err != nil {
+		return uint64(n) + consensus.HeaderLen, err
+	} else {
+		return uint64(n) + consensus.HeaderLen, wr.Flush()
 	}
-
-	return wr.Flush()
 }
 
 // ReadMessage reads from r (net.conn) protocol message
-func ReadMessage(r io.Reader, msg ReadableMessage) error {
+func ReadMessage(r io.Reader, msg ReadableMessage) (uint64, error) {
 	var header Header
 
 	// get the msg header
 	rh := io.LimitReader(r, int64(consensus.HeaderLen))
 	if err := header.Read(rh); err != nil {
-		return err
+		return 0, err
 	}
 	logrus.Debug("got header: ", header)
 
 	if header.Type != msg.Type() {
-		return errors.New("receive unexpected message type")
+		return uint64(consensus.HeaderLen), errors.New("receive unexpected message type")
 	}
 
 	if header.Len > consensus.MaxMsgLen {
-		return errors.New("too big message size")
+		return uint64(consensus.HeaderLen), errors.New("too big message size")
 	}
 
 	rb := io.LimitReader(r, int64(header.Len))
-	return msg.Read(rb)
+	return uint64(consensus.HeaderLen) + uint64(header.Len), msg.Read(rb)
 }
