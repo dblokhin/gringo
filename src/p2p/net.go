@@ -52,7 +52,7 @@ func ReadMessage(r io.Reader, msg ReadableMessage) error {
 	var header Header
 
 	// get the msg header
-	rh := io.LimitReader(r, consensus.HeaderLen)
+	rh := io.LimitReader(r, int64(consensus.HeaderLen))
 	if err := header.Read(rh); err != nil {
 		return err
 	}

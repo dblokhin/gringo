@@ -8,7 +8,7 @@ const (
 	ProtocolVersion uint32 = 1
 
 	// size in bytes of a message header
-	HeaderLen int64 = 11
+	HeaderLen uint64 = 11
 
 	// MaxMsgLen is the maximum size we're willing to accept for any message. Enforced by the
 	// peer-to-peer networking layer only for DoS protection.
