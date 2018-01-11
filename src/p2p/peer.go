@@ -21,7 +21,12 @@ type Peer struct {
 
 	quit      chan struct{}
 	wg        sync.WaitGroup
+
+	// Queue for sending message
 	sendQueue chan SendableMessage
+
+	// disconnect flag
+	disconnect int32
 
 	hand hand
 
@@ -125,7 +130,7 @@ func (p Peer) readHandler() {
 	header := new(Header)
 
 out:
-	for {
+	for atomic.LoadInt32(&p.disconnect) == 0 {
 		if exitError := header.Read(input); exitError != nil {
 			break
 		}
@@ -215,11 +220,20 @@ out:
 
 // Disconnect closes peer connection
 func (p Peer) Disconnect(reason error) {
+	if !atomic.CompareAndSwapInt32(&p.disconnect, 0, 1) {
+		return
+	}
+
 	logrus.Info("Disconnect peer: ", reason)
 
 	close(p.quit)
 	p.conn.Close()
 	p.wg.Wait()
+}
+
+// WaitForDisconnect waits until the peer has disconnected.
+func (p Peer) WaitForDisconnect() {
+	<-p.quit
 }
 
 // SendPing sends Ping request to peer
