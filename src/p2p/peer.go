@@ -61,7 +61,7 @@ func NewPeer(addr string) (*Peer, error) {
 	}
 
 	logrus.Info("peer connected")
-	shake, err := handshake(conn)
+	shake, err := shakeByHand(conn)
 	if err != nil {
 		return nil, err
 	}
@@ -75,6 +75,28 @@ func NewPeer(addr string) (*Peer, error) {
 	p.Info.Capabilities = shake.Capabilities
 	p.Info.TotalDifficulty = shake.TotalDifficulty
 	p.Info.UserAgent = shake.UserAgent
+
+	return p, nil
+}
+
+// AcceptNewPeer creates peer accepting listening server conn
+func AcceptNewPeer(conn net.Conn) (*Peer, error) {
+
+	logrus.Info("accept new peer")
+	hand, err := handByShake(conn)
+	if err != nil {
+		return nil, err
+	}
+
+	p := new(Peer)
+	p.conn = conn
+	p.quit = make(chan struct{})
+	p.sendQueue = make(chan SendableMessage)
+
+	p.Info.Version = hand.Version
+	p.Info.Capabilities = hand.Capabilities
+	p.Info.TotalDifficulty = hand.TotalDifficulty
+	p.Info.UserAgent = hand.UserAgent
 
 	return p, nil
 }
