@@ -280,3 +280,28 @@ func (p *PeerAddrs) Read(r io.Reader) error {
 
 	return nil
 }
+
+// GetBlockHash is hash of block
+type GetBlockHash struct {
+	Hash consensus.BlockHash
+}
+
+// Bytes implements Message interface
+func (h *GetBlockHash) Bytes() []byte {
+	return h.Hash[0:consensus.BlockHashSize]
+}
+
+// Type implements Message interface
+func (h *GetBlockHash) Type() uint8 {
+	return consensus.MsgTypeGetBlock
+}
+
+// Read implements Message interface
+func (h *GetBlockHash) Read(r io.Reader) error {
+
+	hash := make([]byte, consensus.BlockHashSize)
+	_, err := io.ReadFull(r, hash)
+
+	h.Hash = hash
+	return err
+}

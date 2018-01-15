@@ -266,3 +266,13 @@ func (p Peer) SendPing() {
 
 	p.queueMessage(&request)
 }
+
+// GetBlock block request by hash
+func (p Peer) GetBlock(hash consensus.BlockHash) {
+	var request GetBlockHash
+	request.Hash = hash
+
+	logrus.Info("request block by hash")
+	logrus.Debug("block hash: ", hash)
+	p.queueMessage(&request)
+}

@@ -4,7 +4,10 @@ package consensus
 var MAXTarget = [8]uint8{0xf, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 
 const (
-	// A grin is divisible to 10^9, following the SI prefixes
+	// BlockHashSize size of block hash
+	BlockHashSize = 32
+
+	// GrinBase A grin is divisible to 10^9, following the SI prefixes
 	GrinBase uint64 = 1E9
 
 	// Milligrin, a thousand of a grin
@@ -16,25 +19,25 @@ const (
 	// Nanogrin, smallest unit, takes a billion to make a grin
 	NanoGrin uint64 = 1
 
-	// The block subsidy amount
+	// Reward The block subsidy amount
 	Reward uint64 = 60 * GrinBase
 
-	// Number of blocks before a coinbase matures and can be spent
+	// CoinbaseMaturity Number of blocks before a coinbase matures and can be spent
 	CoinbaseMaturity uint64 = 1000
 
-	// Block interval, in seconds, the network will tune its next_target for. Note
+	// BlockTimeSec Block interval, in seconds, the network will tune its next_target for. Note
 	// that we may reduce this value in the future as we get more data on mining
 	// with Cuckoo Cycle, networks improve and block propagation is optimized
 	// (adjusting the reward accordingly).
 	BlockTimeSec uint64 = 60
 
-	// Cuckoo-cycle proof size (cycle length)
+	// ProofSize Cuckoo-cycle proof size (cycle length)
 	ProofSize uint32 = 42
 
-	// Default Cuckoo Cycle size shift used for mining and validating.
+	// DefaultSizeshift Default Cuckoo Cycle size shift used for mining and validating.
 	DefaultSizeshift uint8 = 30
 
-	// Default Cuckoo Cycle easiness, high enough to have good likeliness to find
+	// Easiness Default Cuckoo Cycle easiness, high enough to have good likeliness to find
 	// a solution.
 	Easiness uint32 = 50
 
