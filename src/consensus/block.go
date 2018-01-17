@@ -52,9 +52,46 @@ type Block struct {
 
 // Bytes implements p2p Message interface
 func (b *Block) Bytes() []byte {
-	var buff bytes.Buffer
+	// Dump header
+	buff := new(bytes.Buffer)
+	if _, err := buff.Write(b.Header.Bytes()); err != nil {
+		logrus.Fatal(err)
+	}
 
-	buff.Write(b.Header.Bytes())
+	// Write counts: inputs, outputs, kernels
+	if err := binary.Write(buff, binary.BigEndian, uint64(len(b.Inputs))); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if err := binary.Write(buff, binary.BigEndian, uint64(len(b.Outputs))); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if err := binary.Write(buff, binary.BigEndian, uint64(len(b.Kernels))); err != nil {
+		logrus.Fatal(err)
+	}
+
+	// Write inputs
+	for _, input := range b.Inputs {
+		if _, err := buff.Write(input.Commit); err != nil {
+			logrus.Fatal(err)
+		}
+	}
+
+	// Write outputs
+	for _, output := range b.Outputs {
+		if _, err := buff.Write(output.Bytes()); err != nil {
+			logrus.Fatal(err)
+		}
+	}
+
+	// Write kernels
+	for _, txKernel := range b.Kernels {
+		if _, err := buff.Write(txKernel.Bytes()); err != nil {
+			logrus.Fatal(err)
+		}
+	}
+
 	return buff.Bytes()
 }
 
@@ -149,12 +186,55 @@ type Output struct {
 	// The switch commitment hash, a 160 bit length blake2 hash of blind*J
 	SwitchCommitHash SwitchCommitHash
 	// A proof that the commitment is in the right range
-	Proof secp256k1zkp.RangeProof
+	RangeProof secp256k1zkp.RangeProof
+}
+
+// Bytes implements p2p Message interface
+func (o *Output) Bytes() []byte {
+	buff := new(bytes.Buffer)
+
+	// Write features
+	if err := binary.Write(buff, binary.BigEndian, uint8(o.Features)); err != nil {
+		logrus.Fatal(err)
+	}
+
+	// Write commitment
+	if len(o.Commit) != secp256k1zkp.PedersenCommitmentSize {
+		logrus.Fatal(errors.New("invalid input commitment len"))
+	}
+
+	if _, err := buff.Write(o.Commit); err != nil {
+		logrus.Fatal(err)
+	}
+
+	// Write SwitchCommitHash
+	if len(o.SwitchCommitHash) != SwitchCommitHashSize {
+		logrus.Fatal(errors.New("invalid input switchCommitHash len"))
+	}
+
+	if _, err := buff.Write(o.SwitchCommitHash); err != nil {
+		logrus.Fatal(err)
+	}
+
+	// Write range proof
+	if len(o.RangeProof.Proof) > int(secp256k1zkp.MaxProofSize) || len(o.RangeProof.Proof) != o.RangeProof.ProofLen {
+		logrus.Fatal(errors.New("invalid range proof len"))
+	}
+
+	if err := binary.Write(buff, binary.BigEndian, uint64(o.RangeProof.ProofLen)); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if _, err := buff.Write(o.RangeProof.Proof); err != nil {
+		logrus.Fatal(err)
+	}
+
+	return buff.Bytes()
 }
 
 // Read implements p2p Message interface
 func (o *Output) Read(r io.Reader) error {
-	// Read features, fee & lock
+	// Read features
 	if err := binary.Read(r, binary.BigEndian, (*uint8)(&o.Features)); err != nil {
 		return err
 	}
@@ -190,7 +270,7 @@ func (o *Output) Read(r io.Reader) error {
 		return err
 	}
 
-	o.Proof = secp256k1zkp.RangeProof{
+	o.RangeProof = secp256k1zkp.RangeProof{
 		Proof:proof,
 		ProofLen: int(proofLen),
 	}
@@ -221,6 +301,47 @@ type TxKernel struct {
 	// The signature proving the excess is a valid public key, which signs
 	// the transaction fee.
 	ExcessSig []byte
+}
+
+// Read implements p2p Message interface
+func (k *TxKernel) Bytes() []byte {
+	buff := new(bytes.Buffer)
+
+	// Write features, fee & lock
+	if err := binary.Write(buff, binary.BigEndian, uint8(k.Features)); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if err := binary.Write(buff, binary.BigEndian, k.Fee); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if err := binary.Write(buff, binary.BigEndian, k.LockHeight); err != nil {
+		logrus.Fatal(err)
+	}
+
+	// Write Excess
+	if len(k.Excess) != secp256k1zkp.PedersenCommitmentSize {
+		logrus.Fatal(errors.New("invalid excess len"))
+	}
+
+	if _, err := buff.Write(k.Excess); err != nil {
+		logrus.Fatal(err)
+	}
+
+	// Write ExcessSig
+	if len(k.ExcessSig) > secp256k1zkp.MaxSignatureSize {
+		logrus.Fatal(errors.New("invalid excess_sig len"))
+	}
+	if err := binary.Write(buff, binary.BigEndian, uint64(len(k.ExcessSig))); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if _, err := buff.Write(k.ExcessSig); err != nil {
+		logrus.Fatal(err)
+	}
+
+	return buff.Bytes()
 }
 
 // Read implements p2p Message interface
@@ -281,7 +402,7 @@ type BlockHeader struct {
 	KernelRoot Hash
 	// Nonce increment used to mine this block
 	Nonce uint64
-	// Proof of work data.
+	// RangeProof of work data.
 	POW Proof
 	// Difficulty used to mine the block.
 	Difficulty Difficulty

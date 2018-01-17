@@ -292,3 +292,9 @@ func (p Peer) SendBlockRequest(hash consensus.BlockHash) {
 	logrus.Debug("block hash: ", hash)
 	p.queueMessage(&request)
 }
+
+// SendBlock sends Block to peer
+func (p Peer) SendBlock(block consensus.Block) {
+
+	p.queueMessage(&block)
+}

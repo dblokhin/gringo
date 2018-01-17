@@ -7,7 +7,7 @@ package consensus
 import (
 )
 
-// Proof of work
+// RangeProof of work
 type Proof struct  {
 	// The nonces
  	Nonces []uint32
