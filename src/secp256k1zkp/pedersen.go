@@ -21,3 +21,10 @@ func (c *Commitment) Read(r io.Reader) error {
 
 	return err
 }
+
+type RangeProof struct {
+	// The proof itself, at most 5134 bytes long
+	Proof []byte // max size MAX_PROOF_SIZE
+	// The length of the proof
+	ProofLen int
+}

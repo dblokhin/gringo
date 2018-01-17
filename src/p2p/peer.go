@@ -226,8 +226,15 @@ out:
 			logrus.Info("received msgTypeHeaders")
 		case consensus.MsgTypeGetBlock:
 			logrus.Info("received msgTypeGetBlock")
+
 		case consensus.MsgTypeBlock:
+			var msg consensus.Block
+			if exitError = msg.Read(rl); exitError != nil {
+				break out
+			}
 			logrus.Info("received msgTypeBlock")
+			logrus.Debug("block: ", msg)
+
 		case consensus.MsgTypeTransaction:
 			logrus.Info("received msgTypeTransaction")
 
