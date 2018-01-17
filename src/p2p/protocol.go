@@ -88,7 +88,7 @@ type Protocol interface {
 	SendBlock()
 	SendTransaction()
 	SendHeaderRequest()
-	SendBlockRequest()
+	SendBlockRequest(hash consensus.BlockHash)
 	SendPeerRequest()
 
 	// Close the connection to the remote peer

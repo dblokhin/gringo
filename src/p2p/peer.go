@@ -264,6 +264,11 @@ func (p *Peer) Disconnect(reason error) {
 	p.wg.Wait()
 }
 
+// Close the connection to the remote peer
+func (p *Peer) Close() {
+	p.Disconnect(errors.New("closing peer"))
+}
+
 // WaitForDisconnect waits until the peer has disconnected.
 func (p Peer) WaitForDisconnect() {
 	<-p.quit
@@ -278,8 +283,8 @@ func (p Peer) SendPing() {
 	p.queueMessage(&request)
 }
 
-// GetBlock block request by hash
-func (p Peer) GetBlock(hash consensus.BlockHash) {
+// SendBlockRequest sends request block by hash
+func (p Peer) SendBlockRequest(hash consensus.BlockHash) {
 	var request GetBlockHash
 	request.Hash = hash
 
