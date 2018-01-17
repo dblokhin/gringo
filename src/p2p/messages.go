@@ -284,7 +284,7 @@ func (p *PeerAddrs) Read(r io.Reader) error {
 	return nil
 }
 
-// GetBlockHash is hash of block
+// GetBlockHash message for requesting block by hash
 type GetBlockHash struct {
 	Hash consensus.BlockHash
 }
@@ -334,14 +334,14 @@ func (h *BlockHeaders) Bytes() []byte {
 
 // Type implements Message interface
 func (h *BlockHeaders) Type() uint8 {
-	return consensus.MsgTypeGetHeaders
+	return consensus.MsgTypeHeaders
 }
 
 // Read implements Message interface
 func (h *BlockHeaders) Read(r io.Reader) error {
 
 	var count uint16
-	if err := binary.Read(r, binary.BigEndian, count); err != nil {
+	if err := binary.Read(r, binary.BigEndian, &count); err != nil {
 		return err
 	}
 
@@ -354,3 +354,24 @@ func (h *BlockHeaders) Read(r io.Reader) error {
 
 	return nil
 }
+
+// GetBlockHash message for requesting headers
+type GetBlockHeaders struct {
+	Locator Locator
+}
+
+// Bytes implements Message interface
+func (h *GetBlockHeaders) Bytes() []byte {
+	return h.Locator.Bytes()
+}
+
+// Type implements Message interface
+func (h *GetBlockHeaders) Type() uint8 {
+	return consensus.MsgTypeGetHeaders
+}
+
+// Read implements Message interface
+func (h *GetBlockHeaders) Read(r io.Reader) error {
+	return h.Locator.Read(r)
+}
+

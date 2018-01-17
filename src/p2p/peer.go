@@ -328,3 +328,13 @@ func (p Peer) SendPeerRequest(capabilities consensus.Capabilities) {
 
 	p.queueMessage(&request)
 }
+
+// SendHeaderRequest sends request headers
+func (p Peer) SendHeaderRequest(locator Locator) {
+	logrus.Info("sending header request")
+
+	var request GetBlockHeaders
+	request.Locator = locator
+
+	p.queueMessage(&request)
+}
