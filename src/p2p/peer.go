@@ -160,7 +160,6 @@ out:
 		if exitError = header.Read(input); exitError != nil {
 			break out
 		}
-		logrus.Debug("received header: ", header)
 
 		if header.Len > consensus.MaxMsgLen {
 			exitError = errors.New("too big message size")
@@ -200,45 +199,55 @@ out:
 			// update info
 			p.Info.TotalDifficulty = msg.TotalDifficulty
 			p.Info.Height = msg.Height
-
 			logrus.Debug("received Pong: ", msg)
 
+
 		case consensus.MsgTypeGetPeerAddrs:
+			logrus.Info("receiving peer request (msgTypeGetPeerAddrs)")
 			var msg GetPeerAddrs
 			if exitError = msg.Read(rl); exitError != nil {
 				break out
 			}
-			logrus.Info("received msgTypeGetPeerAddrs")
 
 			// Send answer
 			var resp PeerAddrs
 			p.queueMessage(&resp)
 
 		case consensus.MsgTypePeerAddrs:
+			logrus.Info("receiving peer addrs (msgTypePeerAddrs)")
 			var msg PeerAddrs
 			if exitError = msg.Read(rl); exitError != nil {
 				break out
 			}
-			logrus.Info("received msgTypePeerAddrs")
+
 		case consensus.MsgTypeGetHeaders:
-			logrus.Info("received msgTypeGetHeaders")
+			logrus.Info("receiving header request (msgTypeGetHeaders)")
 		case consensus.MsgTypeHeaders:
-			logrus.Info("received msgTypeHeaders")
+			logrus.Info("receiving headers (msgTypeHeaders)")
 		case consensus.MsgTypeGetBlock:
-			logrus.Info("received msgTypeGetBlock")
+			logrus.Info("receiving block request (MsgTypeGetBlock)")
+
+			var msg GetBlockHash
+			if exitError = msg.Read(rl); exitError != nil {
+				break out
+			}
+
+			// TODO: Send answer & if not found do not send answer
 
 		case consensus.MsgTypeBlock:
+			logrus.Info("receiving block (msgTypeBlock)")
 			var msg consensus.Block
 			if exitError = msg.Read(rl); exitError != nil {
 				break out
 			}
-			logrus.Info("received msgTypeBlock")
+
 			logrus.Debug("block: ", msg)
 
 		case consensus.MsgTypeTransaction:
-			logrus.Info("received msgTypeTransaction")
+			logrus.Info("receiving transaction (msgTypeTransaction)")
 
 		default:
+			logrus.Debug("received unexpected message: ", header)
 			exitError = errors.New("receive unexpected message (type) from peer")
 			break out
 		}

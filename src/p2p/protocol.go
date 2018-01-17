@@ -61,7 +61,6 @@ func ReadMessage(r io.Reader, msg Message) (uint64, error) {
 	if err := header.Read(rh); err != nil {
 		return 0, err
 	}
-	logrus.Debug("got header: ", header)
 
 	if header.Type != msg.Type() {
 		return uint64(consensus.HeaderLen), errors.New("receive unexpected message type")

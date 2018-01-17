@@ -42,9 +42,8 @@ func (h *Header) Read(r io.Reader) error {
 		return err
 	}
 
-	logrus.Debug("got magic: ", h.magic[:])
-
 	if !h.validateMagic() {
+		logrus.Debug("got magic: ", h.magic[:])
 		return errors.New("invalid magic code")
 	}
 
