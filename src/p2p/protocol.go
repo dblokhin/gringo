@@ -89,7 +89,7 @@ type Protocol interface {
 	SendTransaction()
 	SendHeaderRequest()
 	SendBlockRequest(hash consensus.BlockHash)
-	SendPeerRequest()
+	SendPeerRequest(capabilities consensus.Capabilities)
 
 	// Close the connection to the remote peer
 	Close()

@@ -276,6 +276,8 @@ func (p Peer) WaitForDisconnect() {
 
 // SendPing sends Ping request to peer
 func (p Peer) SendPing() {
+	logrus.Info("sending ping")
+
 	var request Ping
 	request.TotalDifficulty = consensus.Difficulty(1)
 	request.Height = 1
@@ -285,16 +287,27 @@ func (p Peer) SendPing() {
 
 // SendBlockRequest sends request block by hash
 func (p Peer) SendBlockRequest(hash consensus.BlockHash) {
+	logrus.Info("sending block request")
+
 	var request GetBlockHash
 	request.Hash = hash
 
-	logrus.Info("request block by hash")
 	logrus.Debug("block hash: ", hash)
 	p.queueMessage(&request)
 }
 
 // SendBlock sends Block to peer
 func (p Peer) SendBlock(block consensus.Block) {
-
+	logrus.Info("sending block, height: ", block.Header.Height)
 	p.queueMessage(&block)
+}
+
+// SendPeerRequest sends peer request
+func (p Peer) SendPeerRequest(capabilities consensus.Capabilities) {
+	logrus.Info("sending peer request")
+	var request GetPeerAddrs
+
+	request.Capabilities = capabilities
+
+	p.queueMessage(&request)
 }
