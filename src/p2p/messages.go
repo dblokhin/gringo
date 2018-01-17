@@ -308,3 +308,49 @@ func (h *GetBlockHash) Read(r io.Reader) error {
 	h.Hash = hash
 	return err
 }
+
+// BlockHeaders message with grin headers
+type BlockHeaders struct {
+	Headers []consensus.BlockHeader
+}
+
+// Bytes implements Message interface
+func (h *BlockHeaders) Bytes() []byte {
+	buff := new(bytes.Buffer)
+
+	// FIXME: should check the bounds of h.Headers & set the limits
+	if err := binary.Write(buff, binary.BigEndian, uint16(len(h.Headers))); err != nil {
+		logrus.Fatal(err)
+	}
+
+	for _, header := range h.Headers {
+		if _, err := buff.Write(header.Bytes()); err != nil {
+			logrus.Fatal(err)
+		}
+	}
+
+	return buff.Bytes()
+}
+
+// Type implements Message interface
+func (h *BlockHeaders) Type() uint8 {
+	return consensus.MsgTypeGetHeaders
+}
+
+// Read implements Message interface
+func (h *BlockHeaders) Read(r io.Reader) error {
+
+	var count uint16
+	if err := binary.Read(r, binary.BigEndian, count); err != nil {
+		return err
+	}
+
+	h.Headers = make([]consensus.BlockHeader, count)
+	for i := 0; i < int(count); i++ {
+		if err := h.Headers[i].Read(r); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
