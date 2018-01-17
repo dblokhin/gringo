@@ -157,14 +157,14 @@ func (p Peer) readHandler() {
 
 out:
 	for atomic.LoadInt32(&p.disconnect) == 0 {
-		if exitError := header.Read(input); exitError != nil {
-			break
+		if exitError = header.Read(input); exitError != nil {
+			break out
 		}
 		logrus.Debug("received header: ", header)
 
 		if header.Len > consensus.MaxMsgLen {
 			exitError = errors.New("too big message size")
-			break
+			break out
 		}
 
 		// limit read
@@ -252,7 +252,7 @@ out:
 }
 
 // Disconnect closes peer connection
-func (p Peer) Disconnect(reason error) {
+func (p *Peer) Disconnect(reason error) {
 	if !atomic.CompareAndSwapInt32(&p.disconnect, 0, 1) {
 		return
 	}
