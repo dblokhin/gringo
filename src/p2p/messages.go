@@ -291,7 +291,11 @@ type GetBlockHash struct {
 
 // Bytes implements Message interface
 func (h *GetBlockHash) Bytes() []byte {
-	return h.Hash[0:consensus.BlockHashSize]
+	if len(h.Hash) != consensus.BlockHashSize {
+		logrus.Fatal(errors.New("invalid block hash len"))
+	}
+
+	return h.Hash
 }
 
 // Type implements Message interface

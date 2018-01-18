@@ -8,7 +8,6 @@ import (
 	"io"
 	"consensus"
 	"bufio"
-	"github.com/sirupsen/logrus"
 	"errors"
 )
 

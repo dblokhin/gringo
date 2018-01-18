@@ -12,6 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"secp256k1zkp"
 	"errors"
+	"golang.org/x/crypto/blake2b"
 )
 
 // BlockHash is hash of block (32 byte)
@@ -45,7 +46,7 @@ const (
 type Block struct {
 	Header BlockHeader
 
-	Inputs []Input
+	Inputs  []Input
 	Outputs []Output
 	Kernels []TxKernel
 }
@@ -256,7 +257,7 @@ func (o *Output) Read(r io.Reader) error {
 	o.SwitchCommitHash = hash
 
 	// Read range proof
-	var proofLen uint64	// tha max is MaxProofSize (5134), but in message field it is uint64
+	var proofLen uint64 // tha max is MaxProofSize (5134), but in message field it is uint64
 	if err := binary.Read(r, binary.BigEndian, &proofLen); err != nil {
 		return err
 	}
@@ -271,7 +272,7 @@ func (o *Output) Read(r io.Reader) error {
 	}
 
 	o.RangeProof = secp256k1zkp.RangeProof{
-		Proof:proof,
+		Proof:    proof,
 		ProofLen: int(proofLen),
 	}
 
@@ -279,7 +280,7 @@ func (o *Output) Read(r io.Reader) error {
 }
 
 // SwitchCommitHash the switch commitment hash
-type SwitchCommitHash []byte	// size = const SwitchCommitHashSize
+type SwitchCommitHash []byte // size = const SwitchCommitHashSize
 
 // A proof that a transaction sums to zero. Includes both the transaction's
 // Pedersen commitment and the signature, that guarantees that the commitments
@@ -411,8 +412,99 @@ type BlockHeader struct {
 }
 
 // Bytes implements p2p Message interface
+func (b *BlockHeader) Hash() []byte {
+	hash := blake2b.Sum256(b.bytesWithoutPOW())
+
+	return hash[:]
+}
+
+// bytesWithoutPOW used in Hash() method, where doesnt need POW data
+func (b *BlockHeader) bytesWithoutPOW() []byte {
+	buff := new(bytes.Buffer)
+
+	// Write version, height of block
+	if err := binary.Write(buff, binary.BigEndian, b.Version); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if err := binary.Write(buff, binary.BigEndian, b.Height); err != nil {
+		logrus.Fatal(err)
+	}
+
+	// Write prev blockhash
+	if len(b.Previous) != BlockHashSize {
+		logrus.Fatal(errors.New("invalid previous block hash len"))
+	}
+
+	if _, err := buff.Write(b.Previous); err != nil {
+		logrus.Fatal(err)
+	}
+
+	// Write timestamp
+	if err := binary.Write(buff, binary.BigEndian, b.Timestamp.Unix()); err != nil {
+		logrus.Fatal(err)
+	}
+
+	// Write UTXORoot, RangeProofRoot, KernelRoot
+	if len(b.UTXORoot) != BlockHashSize ||
+		len(b.RangeProofRoot) != BlockHashSize ||
+		len(b.KernelRoot) != BlockHashSize {
+		logrus.Fatal(errors.New("invalid UTXORoot/RangeProofRoot/KernelRoot len"))
+	}
+
+	if _, err := buff.Write(b.UTXORoot); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if _, err := buff.Write(b.RangeProofRoot); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if _, err := buff.Write(b.KernelRoot); err != nil {
+		logrus.Fatal(err)
+	}
+
+	// Write nonce
+	if err := binary.Write(buff, binary.BigEndian, b.Nonce); err != nil {
+		logrus.Fatal(err)
+	}
+
+	// Write Diff & Total Diff
+	if err := binary.Write(buff, binary.BigEndian, uint64(b.Difficulty)); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if err := binary.Write(buff, binary.BigEndian, uint64(b.TotalDifficulty)); err != nil {
+		logrus.Fatal(err)
+	}
+
+	return buff.Bytes()
+}
+
+func (b *BlockHeader) bytesPOW() []byte {
+	buff := new(bytes.Buffer)
+
+	// Write POW
+	if uint32(b.POW.ProofSize) != ProofSize || uint32(len(b.POW.Nonces)) != ProofSize {
+		logrus.Fatal(errors.New("invalid proof len"))
+	}
+
+	for i := 0; i < int(ProofSize); i++ {
+		if err := binary.Write(buff, binary.BigEndian, b.POW.Nonces[i]); err != nil {
+			logrus.Fatal(err)
+		}
+	}
+
+	return buff.Bytes()
+}
+
+// Bytes implements p2p Message interface
 func (b *BlockHeader) Bytes() []byte {
-	return nil
+	var buff bytes.Buffer
+	buff.Write(b.bytesWithoutPOW())
+	buff.Write(b.bytesPOW())
+
+	return buff.Bytes()
 }
 
 // Read implements p2p Message interface
@@ -479,8 +571,5 @@ func (b *BlockHeader) Read(r io.Reader) error {
 	}
 
 	b.POW = NewProof(pow)
-	logrus.Debug("Readed pow:", pow)
-
 	return nil
 }
-

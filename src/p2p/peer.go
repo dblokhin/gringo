@@ -13,6 +13,7 @@ import (
 	"errors"
 	"sync"
 	"sync/atomic"
+	"encoding/hex"
 )
 
 // Peer is a participant of p2p network
@@ -249,7 +250,8 @@ out:
 				break out
 			}
 
-			logrus.Debug("block: ", msg)
+			//logrus.Debug("block: ", msg)
+			logrus.Info("block hash: ", hex.EncodeToString(msg.Header.Hash()))
 
 		case consensus.MsgTypeTransaction:
 			logrus.Info("receiving transaction (msgTypeTransaction)")
