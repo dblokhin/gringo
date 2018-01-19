@@ -12,7 +12,6 @@ import (
 	"io"
 	"secp256k1zkp"
 	"errors"
-	"golang.org/x/tools/go/gcimporter15/testdata"
 )
 
 // Transaction an grin transaction

@@ -372,3 +372,9 @@ func (p *Peer) SendHeaderRequest(locator Locator) {
 
 	p.WriteMessage(&request)
 }
+
+// SendTransaction sends tx to peer
+func (p *Peer) SendTransaction(tx consensus.Transaction) {
+	logrus.Info("sending transaction")
+	p.WriteMessage(&tx)
+}

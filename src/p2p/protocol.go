@@ -86,7 +86,7 @@ type Protocol interface {
 	SendBlock(block consensus.Block)
 
 	// Relays a transaction to the remote peer
-	SendTransaction(transaction consensus.Transaction)
+	SendTransaction(tx consensus.Transaction)
 
 	// Sends a request for block headers based on the provided block locator
 	SendHeaderRequest(locator Locator)
