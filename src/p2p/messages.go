@@ -14,6 +14,17 @@ import (
 	"errors"
 )
 
+const (
+	// Maximum number of hashes in a block header locator request
+	maxLocators int = 14;
+
+	// Maximum number of block headers a peer should ever send
+	maxBlockHeaders = 512;
+
+	// Maximum number of peer addresses a peer should ever send
+	maxPeerAddrs = 256;
+)
+
 // Header is header of any protocol message, used to identify incoming messages
 type Header struct {
 	// magic number
@@ -249,6 +260,10 @@ func (p *PeerAddrs) Read(r io.Reader) error {
 		return err
 	}
 
+	if peersCount > maxPeerAddrs {
+		return errors.New("too big peer addrs count")
+	}
+
 	for i := uint32(0); i < peersCount; i++ {
 		if err := binary.Read(r, binary.BigEndian, &ipFlag); err != nil {
 			return err
@@ -347,6 +362,10 @@ func (h *BlockHeaders) Read(r io.Reader) error {
 	var count uint16
 	if err := binary.Read(r, binary.BigEndian, &count); err != nil {
 		return err
+	}
+
+	if int(count) > maxBlockHeaders {
+		return errors.New("too big block headers len from peer")
 	}
 
 	h.Headers = make([]consensus.BlockHeader, count)

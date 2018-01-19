@@ -335,6 +335,11 @@ func (p Peer) SendPeerRequest(capabilities consensus.Capabilities) {
 func (p Peer) SendHeaderRequest(locator Locator) {
 	logrus.Info("sending header request")
 
+	if len(locator.Hashes) > maxLocators {
+		logrus.Debug("locator hashes count: ", len(locator.Hashes))
+		logrus.Fatal(errors.New("too big locator hashes"))
+	}
+
 	var request GetBlockHeaders
 	request.Locator = locator
 
