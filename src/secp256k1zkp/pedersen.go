@@ -6,6 +6,7 @@ package secp256k1zkp
 
 import (
 	"io"
+	"fmt"
 )
 
 type Commitment []byte
@@ -20,6 +21,11 @@ func (c *Commitment) Read(r io.Reader) error {
 	_, err := io.ReadFull(r, *c)
 
 	return err
+}
+
+// String implements String() interface
+func (p Commitment) String() string {
+	return fmt.Sprintf("%#v", p)
 }
 
 type RangeProof struct {

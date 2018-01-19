@@ -13,6 +13,7 @@ import (
 	"secp256k1zkp"
 	"errors"
 	"golang.org/x/crypto/blake2b"
+	"fmt"
 )
 
 // BlockHash is hash of block (32 byte)
@@ -164,6 +165,11 @@ func (b *Block) Read(r io.Reader) error {
 	return nil
 }
 
+// String implements String() interface
+func (p Block) String() string {
+	return fmt.Sprintf("%#v", p)
+}
+
 type Input struct {
 	Commit secp256k1zkp.Commitment
 }
@@ -279,6 +285,11 @@ func (o *Output) Read(r io.Reader) error {
 	return nil
 }
 
+// String implements String() interface
+func (p Output) String() string {
+	return fmt.Sprintf("%#v", p)
+}
+
 // SwitchCommitHash the switch commitment hash
 type SwitchCommitHash []byte // size = const SwitchCommitHashSize
 
@@ -383,6 +394,11 @@ func (k *TxKernel) Read(r io.Reader) error {
 	}
 
 	return nil
+}
+
+// String implements String() interface
+func (p TxKernel) String() string {
+	return fmt.Sprintf("%#v", p)
 }
 
 // BlockHeader header of the grin-blocks
@@ -572,4 +588,9 @@ func (b *BlockHeader) Read(r io.Reader) error {
 
 	b.POW = NewProof(pow)
 	return nil
+}
+
+// String implements String() interface
+func (p BlockHeader) String() string {
+	return fmt.Sprintf("%#v", p)
 }

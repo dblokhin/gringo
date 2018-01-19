@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"net"
 	"errors"
+	"fmt"
 )
 
 const (
@@ -109,6 +110,11 @@ func (p *Ping) Read(r io.Reader) error {
 	return binary.Read(r, binary.BigEndian, (*uint64)(&p.Height))
 }
 
+// String implements String() interface
+func (p Ping) String() string {
+	return fmt.Sprintf("%#v", p)
+}
+
 // Pong response same as Ping
 type Pong struct {
 	Ping
@@ -145,6 +151,11 @@ func (p *GetPeerAddrs) Type() uint8 {
 func (p *GetPeerAddrs) Read(r io.Reader) error {
 
 	return binary.Read(r, binary.BigEndian, (*uint32)(&p.Capabilities))
+}
+
+// String implements String() interface
+func (p GetPeerAddrs) String() string {
+	return fmt.Sprintf("%#v", p)
 }
 
 // PeerError sending an error back (usually followed  by closing conn)
@@ -197,6 +208,11 @@ func (p *PeerError) Read(r io.Reader) error {
 
 	p.Message = string(buff)
 	return nil
+}
+
+// String implements String() interface
+func (p PeerError) String() string {
+	return fmt.Sprintf("%#v", p)
 }
 
 // PeerAddrs we know of that are fresh enough, in response to GetPeerAddrs
@@ -295,6 +311,11 @@ func (p *PeerAddrs) Read(r io.Reader) error {
 	return nil
 }
 
+// String implements String() interface
+func (p PeerAddrs) String() string {
+	return fmt.Sprintf("%#v", p)
+}
+
 // GetBlockHash message for requesting block by hash
 type GetBlockHash struct {
 	Hash consensus.BlockHash
@@ -322,6 +343,11 @@ func (h *GetBlockHash) Read(r io.Reader) error {
 
 	h.Hash = hash
 	return err
+}
+
+// String implements String() interface
+func (p GetBlockHash) String() string {
+	return fmt.Sprintf("%#v", p)
 }
 
 // BlockHeaders message with grin headers
@@ -374,6 +400,11 @@ func (h *BlockHeaders) Read(r io.Reader) error {
 	return nil
 }
 
+// String implements String() interface
+func (p BlockHeaders) String() string {
+	return fmt.Sprintf("%#v", p)
+}
+
 // GetBlockHash message for requesting headers
 type GetBlockHeaders struct {
 	Locator Locator
@@ -394,3 +425,7 @@ func (h *GetBlockHeaders) Read(r io.Reader) error {
 	return h.Locator.Read(r)
 }
 
+// String implements String() interface
+func (p GetBlockHeaders) String() string {
+	return fmt.Sprintf("%#v", p)
+}
