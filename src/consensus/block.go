@@ -54,7 +54,6 @@ type Block struct {
 
 // Bytes implements p2p Message interface
 func (b *Block) Bytes() []byte {
-	// Dump header
 	buff := new(bytes.Buffer)
 	if _, err := buff.Write(b.Header.Bytes()); err != nil {
 		logrus.Fatal(err)
@@ -73,6 +72,7 @@ func (b *Block) Bytes() []byte {
 		logrus.Fatal(err)
 	}
 
+	// FIXME: Write sorted input, output, kernels!
 	// Write inputs
 	for _, input := range b.Inputs {
 		if _, err := buff.Write(input.Commit); err != nil {
@@ -125,6 +125,8 @@ func (b *Block) Read(r io.Reader) error {
 	}
 
 	logrus.Debugf("block inputs/outputs/kernels: %d, %d, %d", inputs, outputs, kernels)
+
+	// FIXME: Check sorted input, output, kernels requiring consensus rule!
 
 	// Read inputs
 	logrus.Info("Read inputs")

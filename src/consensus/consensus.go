@@ -4,6 +4,8 @@
 
 package consensus
 
+// Consensus rule that everything is sorted in lexicographical order on the wire.
+
 // MAXTarget The target is the 32-bytes hash block hashes must be lower than.
 var MAXTarget = [8]uint8{0xf, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 

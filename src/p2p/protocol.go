@@ -83,10 +83,18 @@ type Protocol interface {
 	SendPing()
 
 	// SendBlock sends a block to our remote peer
-	SendBlock()
-	SendTransaction()
-	SendHeaderRequest()
+	SendBlock(block consensus.Block)
+
+	// Relays a transaction to the remote peer
+	SendTransaction(transaction consensus.Transaction)
+
+	// Sends a request for block headers based on the provided block locator
+	SendHeaderRequest(locator Locator)
+
+	// Sends a request for a block from its hash
 	SendBlockRequest(hash consensus.BlockHash)
+
+	// Sends a request for some peer addresses
 	SendPeerRequest(capabilities consensus.Capabilities)
 
 	// Close the connection to the remote peer

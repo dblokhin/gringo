@@ -211,6 +211,7 @@ out:
 
 		case consensus.MsgTypeGetPeerAddrs:
 			logrus.Info("receiving peer request (msgTypeGetPeerAddrs)")
+
 			var msg GetPeerAddrs
 			if exitError = msg.Read(rl); exitError != nil {
 				break out
@@ -222,6 +223,7 @@ out:
 
 		case consensus.MsgTypePeerAddrs:
 			logrus.Info("receiving peer addrs (msgTypePeerAddrs)")
+
 			var msg PeerAddrs
 			if exitError = msg.Read(rl); exitError != nil {
 				break out
@@ -229,6 +231,7 @@ out:
 
 		case consensus.MsgTypeGetHeaders:
 			logrus.Info("receiving header request (msgTypeGetHeaders)")
+
 			var msg GetBlockHeaders
 			if exitError = msg.Read(rl); exitError != nil {
 				break out
@@ -260,6 +263,7 @@ out:
 
 		case consensus.MsgTypeBlock:
 			logrus.Info("receiving block (msgTypeBlock)")
+
 			var msg consensus.Block
 			if exitError = msg.Read(rl); exitError != nil {
 				break out
@@ -270,6 +274,13 @@ out:
 
 		case consensus.MsgTypeTransaction:
 			logrus.Info("receiving transaction (msgTypeTransaction)")
+
+			var msg consensus.Transaction
+			if exitError = msg.Read(rl); exitError != nil {
+				break out
+			}
+
+			logrus.Debug("transaction: ", msg)
 
 		default:
 			logrus.Debug("received unexpected message: ", header)
