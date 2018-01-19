@@ -146,8 +146,8 @@ out:
 	p.Disconnect(exitError)
 }
 
-// queueMessage places msg to send queue
-func (p *Peer) queueMessage(msg Message) {
+// WriteMessage places msg to send queue
+func (p *Peer) WriteMessage(msg Message) {
 	select {
 	case <-p.quit: logrus.Info("cannot send message, peer is shutting down")
 	case p.sendQueue <- msg:
@@ -195,7 +195,7 @@ out:
 			var resp Pong
 			resp.TotalDifficulty = consensus.Difficulty(1)
 			resp.Height = 1
-			p.queueMessage(&resp)
+			p.WriteMessage(&resp)
 
 		case consensus.MsgTypePong:
 			// update peer info
@@ -218,7 +218,7 @@ out:
 
 			// Send answer
 			var resp PeerAddrs
-			p.queueMessage(&resp)
+			p.WriteMessage(&resp)
 
 		case consensus.MsgTypePeerAddrs:
 			logrus.Info("receiving peer addrs (msgTypePeerAddrs)")
@@ -236,7 +236,7 @@ out:
 
 			// response
 			var resp BlockHeaders
-			p.queueMessage(&resp)
+			p.WriteMessage(&resp)
 
 		case consensus.MsgTypeHeaders:
 			logrus.Info("receiving headers (msgTypeHeaders)")
@@ -317,7 +317,7 @@ func (p *Peer) SendPing() {
 	request.TotalDifficulty = consensus.Difficulty(1)
 	request.Height = 1
 
-	p.queueMessage(&request)
+	p.WriteMessage(&request)
 }
 
 // SendBlockRequest sends request block by hash
@@ -328,13 +328,13 @@ func (p *Peer) SendBlockRequest(hash consensus.BlockHash) {
 	request.Hash = hash
 
 	logrus.Debug("block hash: ", hash)
-	p.queueMessage(&request)
+	p.WriteMessage(&request)
 }
 
 // SendBlock sends Block to peer
 func (p *Peer) SendBlock(block consensus.Block) {
 	logrus.Info("sending block, height: ", block.Header.Height)
-	p.queueMessage(&block)
+	p.WriteMessage(&block)
 }
 
 // SendPeerRequest sends peer request
@@ -344,7 +344,7 @@ func (p *Peer) SendPeerRequest(capabilities consensus.Capabilities) {
 
 	request.Capabilities = capabilities
 
-	p.queueMessage(&request)
+	p.WriteMessage(&request)
 }
 
 // SendHeaderRequest sends request headers
@@ -359,5 +359,5 @@ func (p *Peer) SendHeaderRequest(locator Locator) {
 	var request GetBlockHeaders
 	request.Locator = locator
 
-	p.queueMessage(&request)
+	p.WriteMessage(&request)
 }
