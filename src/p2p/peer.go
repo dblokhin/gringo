@@ -107,7 +107,7 @@ func AcceptNewPeer(conn net.Conn) (*Peer, error) {
 }
 
 // Start starts loop listening, write handler and so on
-func (p Peer) Start() {
+func (p *Peer) Start() {
 	p.wg.Add(2)
 	go p.writeHandler()
 	go p.readHandler()
@@ -117,18 +117,25 @@ func (p Peer) Start() {
 // queue, and writing them out to the wire.
 //
 // NOTE: This method MUST be run as a goroutine.
-func (p Peer) writeHandler() {
+func (p *Peer) writeHandler() {
 	var exitError error
 
 out:
 	for {
 		select {
 		case msg := <-p.sendQueue:
+			// Ensure that conn is alive
+			if atomic.LoadInt32(&p.disconnect) != 0 {
+				break out
+			}
+
 			var written uint64
 			if written, exitError = WriteMessage(p.conn, msg); exitError != nil {
 				break out
 			}
+
 			atomic.AddUint64(&p.bytesSent, written)
+
 		case <-p.quit:
 			exitError = errors.New("peer exiting")
 			break out
@@ -140,7 +147,7 @@ out:
 }
 
 // queueMessage places msg to send queue
-func (p Peer) queueMessage(msg Message) {
+func (p *Peer) queueMessage(msg Message) {
 	select {
 	case <-p.quit: logrus.Info("cannot send message, peer is shutting down")
 	case p.sendQueue <- msg:
@@ -151,7 +158,7 @@ func (p Peer) queueMessage(msg Message) {
 // properly dispatching the handling of the message to the proper subsystem.
 //
 // NOTE: This method MUST be run as a goroutine.
-func (p Peer) readHandler() {
+func (p *Peer) readHandler() {
 	var exitError error
 	input := bufio.NewReader(p.conn)
 	header := new(Header)
@@ -201,7 +208,6 @@ out:
 			p.Info.TotalDifficulty = msg.TotalDifficulty
 			p.Info.Height = msg.Height
 			logrus.Debug("received Pong: ", msg)
-
 
 		case consensus.MsgTypeGetPeerAddrs:
 			logrus.Info("receiving peer request (msgTypeGetPeerAddrs)")
@@ -298,12 +304,13 @@ func (p *Peer) Close() {
 }
 
 // WaitForDisconnect waits until the peer has disconnected.
-func (p Peer) WaitForDisconnect() {
+func (p *Peer) WaitForDisconnect() {
 	<-p.quit
+	p.wg.Wait()
 }
 
 // SendPing sends Ping request to peer
-func (p Peer) SendPing() {
+func (p *Peer) SendPing() {
 	logrus.Info("sending ping")
 
 	var request Ping
@@ -314,7 +321,7 @@ func (p Peer) SendPing() {
 }
 
 // SendBlockRequest sends request block by hash
-func (p Peer) SendBlockRequest(hash consensus.BlockHash) {
+func (p *Peer) SendBlockRequest(hash consensus.BlockHash) {
 	logrus.Info("sending block request")
 
 	var request GetBlockHash
@@ -325,13 +332,13 @@ func (p Peer) SendBlockRequest(hash consensus.BlockHash) {
 }
 
 // SendBlock sends Block to peer
-func (p Peer) SendBlock(block consensus.Block) {
+func (p *Peer) SendBlock(block consensus.Block) {
 	logrus.Info("sending block, height: ", block.Header.Height)
 	p.queueMessage(&block)
 }
 
 // SendPeerRequest sends peer request
-func (p Peer) SendPeerRequest(capabilities consensus.Capabilities) {
+func (p *Peer) SendPeerRequest(capabilities consensus.Capabilities) {
 	logrus.Info("sending peer request")
 	var request GetPeerAddrs
 
@@ -341,7 +348,7 @@ func (p Peer) SendPeerRequest(capabilities consensus.Capabilities) {
 }
 
 // SendHeaderRequest sends request headers
-func (p Peer) SendHeaderRequest(locator Locator) {
+func (p *Peer) SendHeaderRequest(locator Locator) {
 	logrus.Info("sending header request")
 
 	if len(locator.Hashes) > maxLocators {
