@@ -10,6 +10,7 @@ import (
 	"encoding/binary"
 	"github.com/sirupsen/logrus"
 	"io"
+	"errors"
 )
 
 type Locator struct {
@@ -40,6 +41,10 @@ func (h *Locator) Read(r io.Reader) error {
 	var count uint8
 	if err := binary.Read(r, binary.BigEndian, &count); err != nil {
 		return err
+	}
+
+	if int(count) > maxLocators {
+		return errors.New("too big locator len from peer")
 	}
 
 	h.Hashes = make([]consensus.Hash, count)

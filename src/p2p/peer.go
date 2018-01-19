@@ -223,6 +223,15 @@ out:
 
 		case consensus.MsgTypeGetHeaders:
 			logrus.Info("receiving header request (msgTypeGetHeaders)")
+			var msg GetBlockHeaders
+			if exitError = msg.Read(rl); exitError != nil {
+				break out
+			}
+
+			// response
+			var resp BlockHeaders
+			p.queueMessage(&resp)
+
 		case consensus.MsgTypeHeaders:
 			logrus.Info("receiving headers (msgTypeHeaders)")
 
