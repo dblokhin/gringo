@@ -81,7 +81,6 @@ type Ping struct {
 
 // Bytes implements Message interface
 func (p *Ping) Bytes() []byte {
-	logrus.Info("Ping/Pong struct to bytes")
 	buff := new(bytes.Buffer)
 
 	if err := binary.Write(buff, binary.BigEndian, uint64(p.TotalDifficulty)); err != nil {
@@ -128,7 +127,6 @@ type GetPeerAddrs struct {
 
 // Bytes implements Message interface
 func (p *GetPeerAddrs) Bytes() []byte {
-	logrus.Info("GetPeerAddrs struct to bytes")
 	buff := new(bytes.Buffer)
 
 	if err := binary.Write(buff, binary.BigEndian, uint32(p.Capabilities)); err != nil {
@@ -159,7 +157,6 @@ type PeerError struct {
 
 // Bytes implements Message interface
 func (p *PeerError) Bytes() []byte {
-	logrus.Info("GetPeerAddrs struct to bytes")
 	buff := new(bytes.Buffer)
 
 	if err := binary.Write(buff, binary.BigEndian, uint32(p.Code)); err != nil {
@@ -209,7 +206,6 @@ type PeerAddrs struct {
 
 // Bytes implements Message interface
 func (p *PeerAddrs) Bytes() []byte {
-	logrus.Info("GetPeerAddrs struct to bytes")
 	buff := new(bytes.Buffer)
 
 	if err := binary.Write(buff, binary.BigEndian, uint32(len(p.peers))); err != nil {
