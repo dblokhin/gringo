@@ -12,14 +12,15 @@ import (
 	"io"
 	"secp256k1zkp"
 	"errors"
+	"sort"
 )
 
 // Transaction an grin transaction
 type Transaction struct {
 	// Set of inputs spent by the transaction
-	Inputs []Input
+	Inputs InputList
 	// Set of outputs the transaction produces
-	Outputs []Output
+	Outputs OutputList
 	// Fee paid by the transaction
 	Fee uint64
 	// Transaction is not valid before this block height
@@ -66,8 +67,10 @@ func (t *Transaction) Bytes() []byte {
 	}
 
 	// Consensus rule that everything is sorted in lexicographical order on the wire
-	// FIXME: Write sorted input, output!
-	// FIXME: Check sorted input, output, kernels requiring consensus rule!
+	// consensus rule: input, output, kernels MUST BE sorted!
+	sort.Sort(t.Inputs)
+	sort.Sort(t.Outputs)
+
 	// Write inputs
 	for _, input := range t.Inputs {
 		if _, err := buff.Write(input.Commit); err != nil {
@@ -118,7 +121,6 @@ func (t *Transaction) Read(r io.Reader) error {
 	}
 
 	// Inputs & outputs lens
-	// FIXME: Check sorted input, output requiring consensus rule!
 	var inputs, outputs uint64
 	if err := binary.Read(r, binary.BigEndian, &inputs); err != nil {
 		return err
@@ -143,6 +145,15 @@ func (t *Transaction) Read(r io.Reader) error {
 		if err := t.Outputs[i].Read(r); err != nil {
 			return err
 		}
+	}
+
+	// Check sorted input, output requiring consensus rule!
+	if !sort.IsSorted(t.Inputs) {
+		return errors.New("consensus error: inputs are not sorted")
+	}
+
+	if !sort.IsSorted(t.Outputs) {
+		return errors.New("consensus error: outputs are not sorted")
 	}
 
 	return nil

@@ -14,6 +14,7 @@ import (
 	"errors"
 	"golang.org/x/crypto/blake2b"
 	"fmt"
+	"sort"
 )
 
 // BlockHash is hash of block (32 byte)
@@ -47,9 +48,9 @@ const (
 type Block struct {
 	Header BlockHeader
 
-	Inputs  []Input
-	Outputs []Output
-	Kernels []TxKernel
+	Inputs  InputList
+	Outputs OutputList
+	Kernels TxKernelList
 }
 
 // Bytes implements p2p Message interface
@@ -72,7 +73,11 @@ func (b *Block) Bytes() []byte {
 		logrus.Fatal(err)
 	}
 
-	// FIXME: Write sorted input, output, kernels!
+	// consensus rule: input, output, kernels MUST BE sorted!
+	sort.Sort(b.Inputs)
+	sort.Sort(b.Outputs)
+	sort.Sort(b.Kernels)
+
 	// Write inputs
 	for _, input := range b.Inputs {
 		if _, err := buff.Write(input.Commit); err != nil {
@@ -126,8 +131,6 @@ func (b *Block) Read(r io.Reader) error {
 
 	logrus.Debugf("block inputs/outputs/kernels: %d, %d, %d", inputs, outputs, kernels)
 
-	// FIXME: Check sorted input, output, kernels requiring consensus rule!
-
 	// Read inputs
 	logrus.Info("Read inputs")
 	b.Inputs = make([]Input, inputs)
@@ -164,6 +167,19 @@ func (b *Block) Read(r io.Reader) error {
 
 	logrus.Debug("block kernels: ", b.Kernels)
 
+	// Check sorted input, output requiring consensus rule!
+	if !sort.IsSorted(b.Inputs) {
+		return errors.New("consensus error: inputs are not sorted")
+	}
+
+	if !sort.IsSorted(b.Outputs) {
+		return errors.New("consensus error: outputs are not sorted")
+	}
+
+	if !sort.IsSorted(b.Kernels) {
+		return errors.New("consensus error: kernels are not sorted")
+	}
+
 	return nil
 }
 
@@ -175,6 +191,34 @@ func (p Block) String() string {
 type Input struct {
 	Commit secp256k1zkp.Commitment
 }
+
+type InputList []Input
+
+func (m InputList) Len() int {
+	return len(m)
+}
+
+func (m InputList) Less(i, j int) bool {
+
+	if len(m[i].Commit) != len(m[j].Commit) {
+		return len(m[i].Commit) < len(m[j].Commit)
+	}
+
+	l := len(m[i].Commit)
+
+	for k := 0; k < l; k++ {
+		if m[i].Commit[k] != m[j].Commit[k] {
+			return m[i].Commit[k] < m[j].Commit[k]
+		}
+	}
+
+	return false
+}
+
+func (m InputList) Swap(i, j int) {
+	m[i], m[j] = m[j], m[i]
+}
+
 
 // Output for a transaction, defining the new ownership of coins that are being
 // transferred. The commitment is a blinded value for the output while the
@@ -292,6 +336,36 @@ func (p Output) String() string {
 	return fmt.Sprintf("%#v", p)
 }
 
+type OutputList []Output
+
+func (m OutputList) Len() int {
+	return len(m)
+}
+
+func (m OutputList) Less(i, j int) bool {
+
+	m_i := m[i].Bytes()
+	m_j := m[j].Bytes()
+
+	if len(m_i) != len(m_j) {
+		return len(m_i) < len(m_j)
+	}
+
+	l := len(m_i)
+
+	for k := 0; k < l; k++ {
+		if m_i[k] != m_j[k] {
+			return m_i[k] < m_j[k]
+		}
+	}
+
+	return false
+}
+
+func (m OutputList) Swap(i, j int) {
+	m[i], m[j] = m[j], m[i]
+}
+
 // SwitchCommitHash the switch commitment hash
 type SwitchCommitHash []byte // size = const SwitchCommitHashSize
 
@@ -401,6 +475,36 @@ func (k *TxKernel) Read(r io.Reader) error {
 // String implements String() interface
 func (p TxKernel) String() string {
 	return fmt.Sprintf("%#v", p)
+}
+
+type TxKernelList []TxKernel
+
+func (m TxKernelList) Len() int {
+	return len(m)
+}
+
+func (m TxKernelList) Less(i, j int) bool {
+
+	m_i := m[i].Bytes()
+	m_j := m[j].Bytes()
+
+	if len(m_i) != len(m_j) {
+		return len(m_i) < len(m_j)
+	}
+
+	l := len(m_i)
+
+	for k := 0; k < l; k++ {
+		if m_i[k] != m_j[k] {
+			return m_i[k] < m_j[k]
+		}
+	}
+
+	return false
+}
+
+func (m TxKernelList) Swap(i, j int) {
+	m[i], m[j] = m[j], m[i]
 }
 
 // BlockHeader header of the grin-blocks
