@@ -188,9 +188,12 @@ func (p Block) String() string {
 	return fmt.Sprintf("%#v", p)
 }
 
+// Hash returns hash of block
 func (b *Block) Hash() Hash {
 	return b.Header.Hash()
 }
+
+type BlockList []Block
 
 type Input struct {
 	Commit secp256k1zkp.Commitment
