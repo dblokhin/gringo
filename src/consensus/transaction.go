@@ -28,7 +28,7 @@ type Transaction struct {
 	LockHeight uint64
 	// The signature proving the excess is a valid public key, which signs
 	// the transaction fee
-	ExcessSig []byte
+	ExcessSig Hash
 
 }
 

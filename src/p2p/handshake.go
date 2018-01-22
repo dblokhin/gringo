@@ -290,12 +290,11 @@ func shakeByHand(conn net.Conn) (*shake, error) {
 	// create hand
 	sender := conn.LocalAddr().(*net.TCPAddr)
 	receiver := conn.RemoteAddr().(*net.TCPAddr)
-	nonce := uint64(1)
 
 	msg := hand {
 		Version:         consensus.ProtocolVersion,
 		Capabilities:    consensus.CapFullNode,
-		Nonce:           nonce,
+		Nonce:           serverNonces.NextNonce(),
 		TotalDifficulty: consensus.Difficulty(1),
 		SenderAddr:      sender,
 		ReceiverAddr:    receiver,
@@ -311,7 +310,6 @@ func shakeByHand(conn net.Conn) (*shake, error) {
 	logrus.Info("recv shake from peer")
 
 	// Read peer shake
-	// TODO: check nonce
 	sh := new(shake)
 	if _, err := ReadMessage(conn, sh); err != nil {
 		return nil, err
@@ -326,6 +324,7 @@ func handByShake(conn net.Conn) (*hand, error) {
 
 	logrus.Info("start peer shakeByHand")
 	var h hand
+
 	// Recv remote hand
 	if _, err := ReadMessage(conn, &h); err != nil {
 		return nil, err
@@ -333,8 +332,12 @@ func handByShake(conn net.Conn) (*hand, error) {
 
 	logrus.Debug("receive shake: ", h)
 
-	// Read peer shake
-	// TODO: check nonce
+	// Check nonce to detect connection to ourselves
+	if serverNonces.Consist(h.Nonce) {
+		return &h, errors.New("detect connection to ourselves by nonce")
+	}
+
+	// Send shake
 	msg := shake {
 		Version: consensus.ProtocolVersion,
 		Capabilities: consensus.CapFullNode,

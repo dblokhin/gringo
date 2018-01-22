@@ -388,7 +388,7 @@ type TxKernel struct {
 	Excess secp256k1zkp.Commitment
 	// The signature proving the excess is a valid public key, which signs
 	// the transaction fee.
-	ExcessSig []byte
+	ExcessSig Hash
 }
 
 // Read implements p2p Message interface
