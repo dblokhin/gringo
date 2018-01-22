@@ -224,6 +224,11 @@ type PeerAddrs struct {
 func (p *PeerAddrs) Bytes() []byte {
 	buff := new(bytes.Buffer)
 
+	if len(p.peers) > maxPeerAddrs {
+		logrus.Debug("length peers: ", len(p.peers))
+		logrus.Fatal(errors.New("too big peer addrs count for sending"))
+	}
+
 	if err := binary.Write(buff, binary.BigEndian, uint32(len(p.peers))); err != nil {
 		logrus.Fatal(err)
 	}
