@@ -188,6 +188,10 @@ func (p Block) String() string {
 	return fmt.Sprintf("%#v", p)
 }
 
+func (b *Block) Hash() Hash {
+	return b.Header.Hash()
+}
+
 type Input struct {
 	Commit secp256k1zkp.Commitment
 }
@@ -534,7 +538,7 @@ type BlockHeader struct {
 }
 
 // Bytes implements p2p Message interface
-func (b *BlockHeader) Hash() []byte {
+func (b *BlockHeader) Hash() Hash {
 	hash := blake2b.Sum256(b.bytesWithoutPOW())
 
 	return hash[:]
