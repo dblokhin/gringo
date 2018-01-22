@@ -359,7 +359,11 @@ type BlockHeaders struct {
 func (h *BlockHeaders) Bytes() []byte {
 	buff := new(bytes.Buffer)
 
-	// FIXME: should check the bounds of h.Headers & set the limits
+	// check the bounds of h.Headers & set the limits
+	if len(h.Headers) > maxBlockHeaders {
+		logrus.Fatal(errors.New("invalid headers len in BlockHeaders"))
+	}
+
 	if err := binary.Write(buff, binary.BigEndian, uint16(len(h.Headers))); err != nil {
 		logrus.Fatal(err)
 	}

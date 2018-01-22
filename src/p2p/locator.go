@@ -21,7 +21,11 @@ type Locator struct {
 func (h *Locator) Bytes() []byte {
 	buff := new(bytes.Buffer)
 
-	// FIXME: should check the bounds & set the limits
+	// check the bounds & set the limits
+	if len(h.Hashes) > maxLocators {
+		logrus.Fatal(errors.New("invalid hashes len in locator"))
+	}
+
 	if err := binary.Write(buff, binary.BigEndian, uint8(len(h.Hashes))); err != nil {
 		logrus.Fatal(err)
 	}
