@@ -15,17 +15,6 @@ import (
 	"fmt"
 )
 
-const (
-	// Maximum number of hashes in a block header locator request
-	maxLocators int = 14;
-
-	// Maximum number of block headers a peer should ever send
-	maxBlockHeaders = 512;
-
-	// Maximum number of peer addresses a peer should ever send
-	maxPeerAddrs = 256;
-)
-
 // Header is header of any protocol message, used to identify incoming messages
 type Header struct {
 	// magic number
@@ -224,7 +213,7 @@ type PeerAddrs struct {
 func (p *PeerAddrs) Bytes() []byte {
 	buff := new(bytes.Buffer)
 
-	if len(p.peers) > maxPeerAddrs {
+	if len(p.peers) > consensus.MaxPeerAddrs {
 		logrus.Debug("length peers: ", len(p.peers))
 		logrus.Fatal(errors.New("too big peer addrs count for sending"))
 	}
@@ -277,7 +266,7 @@ func (p *PeerAddrs) Read(r io.Reader) error {
 		return err
 	}
 
-	if peersCount > maxPeerAddrs {
+	if peersCount > consensus.MaxPeerAddrs {
 		return errors.New("too big peer addrs count")
 	}
 
@@ -365,7 +354,7 @@ func (h *BlockHeaders) Bytes() []byte {
 	buff := new(bytes.Buffer)
 
 	// check the bounds of h.Headers & set the limits
-	if len(h.Headers) > maxBlockHeaders {
+	if len(h.Headers) > consensus.MaxBlockHeaders {
 		logrus.Fatal(errors.New("invalid headers len in BlockHeaders"))
 	}
 
@@ -395,7 +384,7 @@ func (h *BlockHeaders) Read(r io.Reader) error {
 		return err
 	}
 
-	if int(count) > maxBlockHeaders {
+	if int(count) > consensus.MaxBlockHeaders {
 		return errors.New("too big block headers len from peer")
 	}
 
@@ -416,7 +405,7 @@ func (p BlockHeaders) String() string {
 
 // GetBlockHash message for requesting headers
 type GetBlockHeaders struct {
-	Locator Locator
+	Locator consensus.Locator
 }
 
 // Bytes implements Message interface

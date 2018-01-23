@@ -72,31 +72,3 @@ func ReadMessage(r io.Reader, msg Message) (uint64, error) {
 	rb := io.LimitReader(r, int64(header.Len))
 	return uint64(consensus.HeaderLen) + uint64(header.Len), msg.Read(rb)
 }
-
-// Protocol defines grin-node network communicates
-type Protocol interface {
-	// TransmittedBytes bytes sent and received
-	// TransmittedBytes() uint64
-
-	// SendPing sends a Ping message to the remote peer. Will panic if handle has never
-	// been called on this protocol.
-	SendPing()
-
-	// SendBlock sends a block to our remote peer
-	SendBlock(block consensus.Block)
-
-	// Relays a transaction to the remote peer
-	SendTransaction(tx consensus.Transaction)
-
-	// Sends a request for block headers based on the provided block locator
-	SendHeaderRequest(locator Locator)
-
-	// Sends a request for a block from its hash
-	SendBlockRequest(hash consensus.BlockHash)
-
-	// Sends a request for some peer addresses
-	SendPeerRequest(capabilities consensus.Capabilities)
-
-	// Close the connection to the remote peer
-	Close()
-}

@@ -33,8 +33,6 @@ type Peer struct {
 	// disconnect flag
 	disconnect int32
 
-	hand hand
-
 	// Info connected peer
 	Info struct {
 		// protocol version of the sender
@@ -359,10 +357,10 @@ func (p *Peer) SendPeerRequest(capabilities consensus.Capabilities) {
 }
 
 // SendHeaderRequest sends request headers
-func (p *Peer) SendHeaderRequest(locator Locator) {
+func (p *Peer) SendHeaderRequest(locator consensus.Locator) {
 	logrus.Info("sending header request")
 
-	if len(locator.Hashes) > maxLocators {
+	if len(locator.Hashes) > consensus.MaxLocators {
 		logrus.Debug("locator hashes count: ", len(locator.Hashes))
 		logrus.Fatal(errors.New("too big locator hashes"))
 	}

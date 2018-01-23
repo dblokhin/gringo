@@ -2,10 +2,9 @@
 // Use of this source code is governed by a GNU GENERAL PUBLIC LICENSE v3
 // license that can be found in the LICENSE file.
 
-package p2p
+package consensus
 
 import (
-	"consensus"
 	"bytes"
 	"encoding/binary"
 	"github.com/sirupsen/logrus"
@@ -14,7 +13,7 @@ import (
 )
 
 type Locator struct {
-	Hashes []consensus.Hash
+	Hashes []Hash
 }
 
 // Bytes implements Message interface
@@ -22,7 +21,7 @@ func (h *Locator) Bytes() []byte {
 	buff := new(bytes.Buffer)
 
 	// check the bounds & set the limits
-	if len(h.Hashes) > maxLocators {
+	if len(h.Hashes) > MaxLocators {
 		logrus.Fatal(errors.New("invalid hashes len in locator"))
 	}
 
@@ -47,13 +46,13 @@ func (h *Locator) Read(r io.Reader) error {
 		return err
 	}
 
-	if int(count) > maxLocators {
+	if int(count) > MaxLocators {
 		return errors.New("too big locator len from peer")
 	}
 
-	h.Hashes = make([]consensus.Hash, count)
+	h.Hashes = make([]Hash, count)
 	for i := 0; i < int(count); i++ {
-		h.Hashes[i] = make([]byte, consensus.BlockHashSize)
+		h.Hashes[i] = make([]byte, BlockHashSize)
 
 		if _, err := io.ReadFull(r, h.Hashes[i]); err != nil {
 			return err

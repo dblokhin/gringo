@@ -55,3 +55,42 @@ const (
 const (
 	NetUnsupportedVersion int = 100
 )
+
+const (
+	// Maximum number of hashes in a block header locator request
+	MaxLocators int = 14;
+
+	// Maximum number of block headers a peer should ever send
+	MaxBlockHeaders = 512;
+
+	// Maximum number of peer addresses a peer should ever send
+	MaxPeerAddrs = 256;
+)
+
+// Protocol defines grin-node network communicates
+type Protocol interface {
+	// TransmittedBytes bytes sent and received
+	// TransmittedBytes() uint64
+
+	// SendPing sends a Ping message to the remote peer. Will panic if handle has never
+	// been called on this protocol.
+	SendPing()
+
+	// SendBlock sends a block to our remote peer
+	SendBlock(block Block)
+
+	// Relays a transaction to the remote peer
+	SendTransaction(tx Transaction)
+
+	// Sends a request for block headers based on the provided block locator
+	SendHeaderRequest(locator Locator)
+
+	// Sends a request for a block from its hash
+	SendBlockRequest(hash BlockHash)
+
+	// Sends a request for some peer addresses
+	SendPeerRequest(capabilities Capabilities)
+
+	// Close the connection to the remote peer
+	Close()
+}
