@@ -24,6 +24,9 @@ type peerManager struct {
 	sync.RWMutex
 	connected int
 
+	pool chan struct{}
+	quit chan int
+
 	PeersTable map[string]*peerInfo
 }
 
@@ -108,6 +111,11 @@ func (pm *peerManager) PeerAddrs() []string {
 
 // connectPeer connects peer from peerTable
 func (pm *peerManager) connectPeer(addr string) error {
+	// for empty string nonerror exit
+	if len(addr) == 0 {
+		return nil
+	}
+
 	pm.Lock()
 	peer, ok := pm.PeersTable[addr]
 	defer pm.Unlock()
@@ -136,7 +144,9 @@ func (pm *peerManager) connectPeer(addr string) error {
 	pm.PeersTable[addr].Status = psConnected
 	pm.PeersTable[addr].LastConn = time.Now()
 
-	// And send peers request
+	// And send ping / peers request
+	peerConn.Start()
+	peerConn.SendPing()
 	peerConn.SendPeerRequest(consensus.CapFullNode)
 
 	// on disconnect update info
@@ -150,6 +160,51 @@ func (pm *peerManager) connectPeer(addr string) error {
 	}()
 
 	return nil
+}
+
+// Run starts network activity
+func (pm *peerManager) Run() {
+	pm.pool = make(chan struct{}, maxOnlineConnections)
+	pm.quit = make(chan int)
+
+out:
+	for {
+		select {
+		case <- pm.quit: break out
+
+		case pm.pool <- struct{}{}:
+			if err := pm.connectPeer(pm.notConnected()); err != nil {
+				logrus.Error(err)
+			}
+		}
+	}
+
+	// Close all connections
+	pm.Lock()
+	for _, peer := range pm.PeersTable {
+		peer.Peer.Close()
+		peer.Status = psDisconnected
+	}
+	pm.Unlock()
+}
+
+// Close stops network activity
+func (pm *peerManager) Close() {
+	close(pm.quit)
+}
+
+// notConnected returns peer addr from table which not active
+func (pm *peerManager) notConnected() string {
+	pm.Lock()
+	defer pm.Unlock()
+
+	for addr, peer := range pm.PeersTable {
+		if peer.Status == psNew || peer.Status == psDisconnected {
+			return addr
+		}
+	}
+
+	return ""
 }
 
 type peerInfo struct {
