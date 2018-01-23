@@ -288,6 +288,7 @@ func shakeByHand(conn net.Conn) (*shake, error) {
 
 	logrus.Info("start peer shakeByHand")
 	// create hand
+	// TODO: use the server listen addr
 	sender := conn.LocalAddr().(*net.TCPAddr)
 	receiver := conn.RemoteAddr().(*net.TCPAddr)
 
