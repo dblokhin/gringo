@@ -193,6 +193,7 @@ out:
 			var resp Pong
 			resp.TotalDifficulty = consensus.Difficulty(1)
 			resp.Height = 1
+
 			p.WriteMessage(&resp)
 
 		case consensus.MsgTypePong:
@@ -217,7 +218,6 @@ out:
 			// Send answer
 			var resp PeerAddrs
 			resp.peers = Syncher.PM.PeerAddrs(msg.Capabilities)
-			logrus.Debug("sending peers: ", resp.peers)
 
 			p.WriteMessage(&resp)
 
@@ -275,7 +275,6 @@ out:
 				break out
 			}
 
-			//logrus.Debug("block: ", msg)
 			logrus.Info("block hash: ", hex.EncodeToString(msg.Header.Hash()))
 
 		case consensus.MsgTypeTransaction:

@@ -11,6 +11,7 @@ import (
 	"errors"
 	"github.com/sirupsen/logrus"
 	"net"
+	"sync/atomic"
 )
 
 // maxOnlineConnections should be override
@@ -23,7 +24,7 @@ var (
 // peerManager control connections with peers
 type peerManager struct {
 	sync.RWMutex
-	connected int
+	connected int32
 
 	pool chan struct{}
 	quit chan int
@@ -124,7 +125,6 @@ func (pm *peerManager) PeerAddrs(capabilities consensus.Capabilities) []*net.TCP
 		}
 
 		// filter by capabilities
-		logrus.Debug("compare caps: ", v.Capabilities, capabilities, v.Capabilities & capabilities)
 		if (v.Capabilities & capabilities) != capabilities {
 			continue
 		}
@@ -152,7 +152,7 @@ func (pm *peerManager) connectPeer(addr string) error {
 
 	pm.Lock()
 	peer, ok := pm.PeersTable[addr]
-	defer pm.Unlock()
+	pm.Unlock()
 
 	if !ok {
 		return errors.New("peer doest exists in peerTable")
@@ -163,15 +163,19 @@ func (pm *peerManager) connectPeer(addr string) error {
 		return nil
 	}
 
-	if pm.connected > maxOnlineConnections {
+	if atomic.LoadInt32(&pm.connected) > int32(maxOnlineConnections) {
 		return errors.New("too big online peers connections")
 	}
 
 	peerConn, err := NewPeer(addr)
 	if err != nil {
+		pm.Lock()
+		pm.PeersTable[addr].Status  = psFailedConn
+		pm.Unlock()
 		return err
 	}
 
+	pm.Lock()
 	pm.connected++
 
 	pm.PeersTable[addr].Peer = peerConn
@@ -180,6 +184,7 @@ func (pm *peerManager) connectPeer(addr string) error {
 	pm.PeersTable[addr].Capabilities = peerConn.Info.Capabilities
 	pm.PeersTable[addr].Height = peerConn.Info.Height
 	pm.PeersTable[addr].TotalDifficulty = peerConn.Info.TotalDifficulty
+	pm.Unlock()
 
 	// And send ping / peers request
 	peerConn.Start()
@@ -265,4 +270,5 @@ const (
 	psConnected
 	psBanned
 	psDisconnected
+	psFailedConn
 )
