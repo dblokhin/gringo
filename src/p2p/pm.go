@@ -85,6 +85,10 @@ func (pm *peerManager) AddPeer(addr string) {
 		if netAddr.IP.IsMulticast() {
 			return
 		}
+
+		if netAddr.Port == 0 {
+			return
+		}
 	}
 
 	pm.Lock()
