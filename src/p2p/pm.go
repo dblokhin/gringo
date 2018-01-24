@@ -116,10 +116,16 @@ func (pm *peerManager) PeerAddrs(capabilities consensus.Capabilities) []*net.TCP
 
 	// Getting peers randomly
 	pm.Lock()
-	for addr, v := range pm.PeersTable {
-		// TODO: filter by capabilities
+	defer pm.Unlock()
 
+	for addr, v := range pm.PeersTable {
 		if v.Status == psBanned {
+			continue
+		}
+
+		// filter by capabilities
+		logrus.Debug("compare caps: ", v.Capabilities, capabilities, v.Capabilities & capabilities)
+		if (v.Capabilities & capabilities) != capabilities {
 			continue
 		}
 
@@ -133,7 +139,6 @@ func (pm *peerManager) PeerAddrs(capabilities consensus.Capabilities) []*net.TCP
 			break
 		}
 	}
-	pm.Unlock()
 
 	return result
 }

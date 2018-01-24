@@ -187,7 +187,7 @@ out:
 			p.Info.TotalDifficulty = msg.TotalDifficulty
 			p.Info.Height = msg.Height
 
-			logrus.Debug("received Ping: ", msg)
+			logrus.Debugf("received Ping (%s): %s", p.conn.RemoteAddr().String(), msg.String())
 			// send Pong
 			// TODO: send actual blockchain state
 			var resp Pong
@@ -205,10 +205,9 @@ out:
 			// update info
 			p.Info.TotalDifficulty = msg.TotalDifficulty
 			p.Info.Height = msg.Height
-			logrus.Debug("received Pong: ", msg)
 
 		case consensus.MsgTypeGetPeerAddrs:
-			logrus.Info("receiving peer request (msgTypeGetPeerAddrs)")
+			logrus.Infof("receiving peer request (%s)", p.conn.RemoteAddr().String())
 
 			var msg GetPeerAddrs
 			if exitError = msg.Read(rl); exitError != nil {
@@ -218,11 +217,12 @@ out:
 			// Send answer
 			var resp PeerAddrs
 			resp.peers = Syncher.PM.PeerAddrs(msg.Capabilities)
+			logrus.Debug("sending peers: ", resp.peers)
 
 			p.WriteMessage(&resp)
 
 		case consensus.MsgTypePeerAddrs:
-			logrus.Info("receiving peer addrs (msgTypePeerAddrs)")
+			logrus.Infof("receiving peer addrs (%s)", p.conn.RemoteAddr().String())
 
 			var msg PeerAddrs
 			if exitError = msg.Read(rl); exitError != nil {
@@ -236,7 +236,7 @@ out:
 
 
 		case consensus.MsgTypeGetHeaders:
-			logrus.Info("receiving header request (msgTypeGetHeaders)")
+			logrus.Infof("receiving header request (%s)", p.conn.RemoteAddr().String())
 
 			var msg GetBlockHeaders
 			if exitError = msg.Read(rl); exitError != nil {
@@ -248,7 +248,7 @@ out:
 			p.WriteMessage(&resp)
 
 		case consensus.MsgTypeHeaders:
-			logrus.Info("receiving headers (msgTypeHeaders)")
+			logrus.Infof("receiving headers (%s)", p.conn.RemoteAddr().String())
 
 			var msg BlockHeaders
 			if exitError = msg.Read(rl); exitError != nil {
@@ -258,7 +258,7 @@ out:
 			logrus.Debug("headers: ", msg.Headers)
 
 		case consensus.MsgTypeGetBlock:
-			logrus.Info("receiving block request (MsgTypeGetBlock)")
+			logrus.Infof("receiving block request (%s)", p.conn.RemoteAddr().String())
 
 			var msg GetBlockHash
 			if exitError = msg.Read(rl); exitError != nil {
@@ -268,7 +268,7 @@ out:
 			// TODO: Send answer & if not found do not send answer
 
 		case consensus.MsgTypeBlock:
-			logrus.Info("receiving block (msgTypeBlock)")
+			logrus.Infof("receiving block (%s)", p.conn.RemoteAddr().String())
 
 			var msg consensus.Block
 			if exitError = msg.Read(rl); exitError != nil {
@@ -279,7 +279,7 @@ out:
 			logrus.Info("block hash: ", hex.EncodeToString(msg.Header.Hash()))
 
 		case consensus.MsgTypeTransaction:
-			logrus.Info("receiving transaction (msgTypeTransaction)")
+			logrus.Infof("receiving transaction (%s)", p.conn.RemoteAddr().String())
 
 			var msg consensus.Transaction
 			if exitError = msg.Read(rl); exitError != nil {
