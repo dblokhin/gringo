@@ -10,6 +10,7 @@ import (
 	"consensus"
 	"errors"
 	"github.com/sirupsen/logrus"
+	"net"
 )
 
 // maxOnlineConnections should be override
@@ -32,10 +33,15 @@ type peerManager struct {
 
 // newPM returns PM instance
 func newPM() *peerManager {
-	return &peerManager{
+	pm := &peerManager{
 		connected: 0,
 		PeersTable: make(map[string]*peerInfo),
 	}
+
+	pm.pool = make(chan struct{}, maxOnlineConnections)
+	pm.quit = make(chan int)
+
+	return pm
 }
 
 // Ban closes connection & ban peer
@@ -88,20 +94,24 @@ func (pm *peerManager) AddPeer(addr string) {
 }
 
 // PeerAddrs returns peer list (no banned)
-func (pm *peerManager) PeerAddrs() []string {
-	result := make([]string, consensus.MaxPeerAddrs)
+func (pm *peerManager) PeerAddrs() []*net.TCPAddr {
+	result := make([]*net.TCPAddr, consensus.MaxPeerAddrs)
 	cnt := 0;
 
 	// Getting peers randomly
 	pm.Lock()
-	for k, v := range pm.PeersTable {
+	for addr, v := range pm.PeersTable {
 		if cnt == consensus.MaxPeerAddrs {
 			break
 		}
 
 		if v.Status != psBanned {
-			cnt++
-			result = append(result, k)
+			if netAddr, err := net.ResolveTCPAddr("tcp", addr); err == nil {
+				cnt++
+				result = append(result, netAddr)
+			} else {
+				logrus.Error(err)
+			}
 		}
 	}
 	pm.Unlock()
@@ -157,6 +167,8 @@ func (pm *peerManager) connectPeer(addr string) error {
 		pm.connected--
 		pm.PeersTable[addr].Status = psDisconnected
 		pm.Unlock()
+
+		<-pm.pool
 	}()
 
 	return nil
@@ -164,8 +176,6 @@ func (pm *peerManager) connectPeer(addr string) error {
 
 // Run starts network activity
 func (pm *peerManager) Run() {
-	pm.pool = make(chan struct{}, maxOnlineConnections)
-	pm.quit = make(chan int)
 
 out:
 	for {
@@ -176,6 +186,8 @@ out:
 			if err := pm.connectPeer(pm.notConnected()); err != nil {
 				logrus.Error(err)
 			}
+
+			time.Sleep(time.Second)
 		}
 	}
 

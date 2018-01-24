@@ -52,7 +52,7 @@ type Peer struct {
 // NewPeer connects to peer
 func NewPeer(addr string) (*Peer, error) {
 
-	logrus.Info("start new peer")
+	logrus.Info("starting new peer")
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		return nil, err
@@ -63,7 +63,7 @@ func NewPeer(addr string) (*Peer, error) {
 		return nil, err
 	}
 
-	logrus.Info("peer connected")
+	logrus.Infof("connected to peer (%s)", addr)
 	shake, err := shakeByHand(conn)
 	if err != nil {
 		return nil, err
@@ -217,6 +217,7 @@ out:
 
 			// Send answer
 			var resp PeerAddrs
+			resp.peers = TestSync.PM.PeerAddrs()
 			p.WriteMessage(&resp)
 
 		case consensus.MsgTypePeerAddrs:
@@ -226,6 +227,12 @@ out:
 			if exitError = msg.Read(rl); exitError != nil {
 				break out
 			}
+
+			logrus.Infof("adding %d peers", len(msg.peers))
+			for _, p := range msg.peers {
+				TestSync.PM.AddPeer(p.String())
+			}
+
 
 		case consensus.MsgTypeGetHeaders:
 			logrus.Info("receiving header request (msgTypeGetHeaders)")
