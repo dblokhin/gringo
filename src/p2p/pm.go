@@ -197,6 +197,7 @@ out:
 		case pm.pool <- struct{}{}:
 			if err := pm.connectPeer(pm.notConnected()); err != nil {
 				logrus.Error(err)
+				<- pm.pool
 			}
 
 			time.Sleep(time.Second)
