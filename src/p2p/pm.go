@@ -77,6 +77,16 @@ func (pm *peerManager) AddPeer(addr string) {
 		return
 	}
 
+	if netAddr, err := net.ResolveTCPAddr("tcp", addr); err != nil {
+		// dont add invalid tcp addrs
+		return
+	} else {
+		// FIXME: discard another IPs
+		if netAddr.IP.IsMulticast() {
+			return
+		}
+	}
+
 	pm.Lock()
 	defer pm.Unlock()
 

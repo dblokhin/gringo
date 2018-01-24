@@ -202,8 +202,7 @@ func (h *shake) Read(r io.Reader) error {
 func shakeByHand(conn net.Conn) (*shake, error) {
 	// create hand
 	// TODO: use the server listen addr
-	//sender, err := net.ResolveTCPAddr("tcp4", "0.0.0.0:0")
-	sender, err := net.ResolveTCPAddr("tcp", "127.0.0.1:13413")
+	sender, err := net.ResolveTCPAddr("tcp", "0.0.0.0:0")
 	if err != nil {
 		logrus.Fatal(err)
 	}
