@@ -221,29 +221,7 @@ func (p *PeerAddrs) Bytes() []byte {
 	}
 
 	for _, peerAddr := range p.peers {
-		// Write Sender addr
-		switch len(peerAddr.IP) {
-		case net.IPv4len:
-			{
-				if _, err := buff.Write([]byte{0}); err != nil {
-					logrus.Fatal(err)
-				}
-			}
-		case net.IPv6len:
-			{
-				if _, err := buff.Write([]byte{1}); err != nil {
-					logrus.Fatal(err)
-				}
-			}
-		default:
-			logrus.Fatal("invalid netaddr")
-		}
-
-		if _, err := buff.Write(peerAddr.IP); err != nil {
-			logrus.Fatal(err)
-		}
-
-		binary.Write(buff, binary.BigEndian, uint16(peerAddr.Port))
+		serializeTCPAddr(buff, peerAddr)
 	}
 
 	return buff.Bytes()
@@ -256,9 +234,7 @@ func (p *PeerAddrs) Type() uint8 {
 
 // Read implements Message interface
 func (p *PeerAddrs) Read(r io.Reader) error {
-
 	var peersCount uint32
-	var ipFlag int8
 
 	if err := binary.Read(r, binary.BigEndian, &peersCount); err != nil {
 		return err
@@ -269,35 +245,11 @@ func (p *PeerAddrs) Read(r io.Reader) error {
 	}
 
 	for i := uint32(0); i < peersCount; i++ {
-		if err := binary.Read(r, binary.BigEndian, &ipFlag); err != nil {
+		if addr, err := deserializeTCPAddr(r); err != nil {
 			return err
-		}
-
-		var ipAddr []byte
-		var ipPort uint16
-
-		if ipFlag == 0 {
-			// for ipv4 addr
-			ipAddr = make([]byte, net.IPv4len)
 		} else {
-			// for ipv6 addr
-			ipAddr = make([]byte, net.IPv6len)
+			p.peers = append(p.peers, addr)
 		}
-
-		if _, err := io.ReadFull(r, ipAddr); err != nil {
-			return err
-		}
-
-		if err := binary.Read(r, binary.BigEndian, &ipPort); err != nil {
-			return err
-		}
-
-		addr := &net.TCPAddr{
-			IP: ipAddr,
-			Port: int(ipPort),
-		}
-
-		p.peers = append(p.peers, addr)
 	}
 
 	return nil

@@ -53,52 +53,15 @@ func (h *hand) Bytes() []byte {
 		logrus.Fatal(err)
 	}
 
+	if (h.SenderAddr == nil) || (h.ReceiverAddr == nil) {
+		logrus.Fatal("invalid netaddr (SenderAddr/ReceiverAddr)")
+	}
+
 	// Write Sender addr
-	switch len(h.SenderAddr.IP) {
-	case net.IPv4len:
-		{
-			if _, err := buff.Write([]byte{0}); err != nil {
-				logrus.Fatal(err)
-			}
-		}
-	case net.IPv6len:
-		{
-			if _, err := buff.Write([]byte{1}); err != nil {
-				logrus.Fatal(err)
-			}
-		}
-	default:
-		logrus.Fatal("invalid netaddr")
-	}
-
-	if _, err := buff.Write(h.SenderAddr.IP); err != nil {
-		logrus.Fatal(err)
-	}
-
-	binary.Write(buff, binary.BigEndian, uint16(h.SenderAddr.Port))
+	serializeTCPAddr(buff, h.SenderAddr)
 
 	// Write Recv addr
-	switch len(h.ReceiverAddr.IP) {
-	case net.IPv4len:
-		{
-			if _, err := buff.Write([]byte{0}); err != nil {
-				logrus.Fatal(err)
-			}
-		}
-	case net.IPv6len:
-		{
-			if _, err := buff.Write([]byte{1}); err != nil {
-				logrus.Fatal(err)
-			}
-		}
-	default:
-		logrus.Fatal("invalid netaddr")
-	}
-
-	if _, err := buff.Write(h.ReceiverAddr.IP); err != nil {
-		logrus.Fatal(err)
-	}
-	binary.Write(buff, binary.BigEndian, uint16(h.ReceiverAddr.Port))
+	serializeTCPAddr(buff, h.ReceiverAddr)
 
 	// Write user agent [len][string]
 	binary.Write(buff, binary.BigEndian, uint64(len(h.UserAgent)))
@@ -134,59 +97,17 @@ func (h *hand) Read(r io.Reader) error {
 	}
 
 	// read Sender addr
-	var ipFlag int8
-	var ipAddr []byte
-	var ipPort uint16
-
-	if err := binary.Read(r, binary.BigEndian, &ipFlag); err != nil {
+	if addr, err := deserializeTCPAddr(r); err != nil {
 		return err
-	}
-
-	if ipFlag == 0 {
-		// for ipv4 addr
-		ipAddr = make([]byte, net.IPv4len)
 	} else {
-		// for ipv6 addr
-		ipAddr = make([]byte, net.IPv6len)
-	}
-
-	if _, err := io.ReadFull(r, ipAddr); err != nil {
-		return err
-	}
-
-	if err := binary.Read(r, binary.BigEndian, &ipPort); err != nil {
-		return err
-	}
-
-	h.SenderAddr = &net.TCPAddr{
-		IP: ipAddr,
-		Port: int(ipPort),
+		h.SenderAddr = addr
 	}
 
 	// read Recv addr
-	if err := binary.Read(r, binary.BigEndian, &ipFlag); err != nil {
+	if addr, err := deserializeTCPAddr(r); err != nil {
 		return err
-	}
-
-	if ipFlag == 0 {
-		// for ipv4 addr
-		ipAddr = make([]byte, net.IPv4len)
 	} else {
-		// for ipv6 addr
-		ipAddr = make([]byte, net.IPv6len)
-	}
-
-	if _, err := io.ReadFull(r, ipAddr); err != nil {
-		return err
-	}
-
-	if err := binary.Read(r, binary.BigEndian, &ipPort); err != nil {
-		return err
-	}
-
-	h.ReceiverAddr = &net.TCPAddr{
-		IP: ipAddr,
-		Port: int(ipPort),
+		h.ReceiverAddr = addr
 	}
 
 	// read user agent
@@ -281,7 +202,12 @@ func (h *shake) Read(r io.Reader) error {
 func shakeByHand(conn net.Conn) (*shake, error) {
 	// create hand
 	// TODO: use the server listen addr
-	sender := conn.LocalAddr().(*net.TCPAddr)
+	//sender, err := net.ResolveTCPAddr("tcp4", "0.0.0.0:0")
+	sender, err := net.ResolveTCPAddr("tcp", "127.0.0.1:13413")
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
 	receiver := conn.RemoteAddr().(*net.TCPAddr)
 
 	msg := hand {
