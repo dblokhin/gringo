@@ -7,7 +7,7 @@ package p2p
 import (
 )
 
-
+var Syncher Sync
 
 type Sync struct {
 	// Peers manager

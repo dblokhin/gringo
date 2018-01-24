@@ -94,24 +94,26 @@ func (pm *peerManager) AddPeer(addr string) {
 }
 
 // PeerAddrs returns peer list (no banned)
-func (pm *peerManager) PeerAddrs() []*net.TCPAddr {
-	result := make([]*net.TCPAddr, consensus.MaxPeerAddrs)
-	cnt := 0;
+func (pm *peerManager) PeerAddrs(capabilities consensus.Capabilities) []*net.TCPAddr {
+	result := make([]*net.TCPAddr, 0)
 
 	// Getting peers randomly
 	pm.Lock()
 	for addr, v := range pm.PeersTable {
-		if cnt == consensus.MaxPeerAddrs {
-			break
+		// TODO: filter by capabilities
+
+		if v.Status == psBanned {
+			continue
 		}
 
-		if v.Status != psBanned {
-			if netAddr, err := net.ResolveTCPAddr("tcp", addr); err == nil {
-				cnt++
-				result = append(result, netAddr)
-			} else {
-				logrus.Error(err)
-			}
+		if netAddr, err := net.ResolveTCPAddr("tcp", addr); err == nil {
+			result = append(result, netAddr)
+		} else {
+			logrus.Error(err)
+		}
+
+		if len(result) == consensus.MaxPeerAddrs {
+			break
 		}
 	}
 	pm.Unlock()

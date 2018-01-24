@@ -52,7 +52,7 @@ type Peer struct {
 // NewPeer connects to peer
 func NewPeer(addr string) (*Peer, error) {
 
-	logrus.Info("starting new peer")
+	logrus.Infof("starting new peer (%s)", addr)
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		return nil, err
@@ -217,7 +217,7 @@ out:
 
 			// Send answer
 			var resp PeerAddrs
-			resp.peers = TestSync.PM.PeerAddrs()
+			resp.peers = Syncher.PM.PeerAddrs(msg.Capabilities)
 			p.WriteMessage(&resp)
 
 		case consensus.MsgTypePeerAddrs:
@@ -230,7 +230,7 @@ out:
 
 			logrus.Infof("adding %d peers", len(msg.peers))
 			for _, p := range msg.peers {
-				TestSync.PM.AddPeer(p.String())
+				Syncher.PM.AddPeer(p.String())
 			}
 
 
