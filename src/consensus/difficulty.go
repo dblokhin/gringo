@@ -4,7 +4,11 @@
 
 package consensus
 
-// difficulty is defined as the maximum target divided by the block hash.
+const (
+	ZeroDifficulty  Difficulty = 0
+)
+
+// Difficulty is defined as the maximum target divided by the block hash.
 type Difficulty uint64
 
 func (d Difficulty) Minimum() Difficulty {

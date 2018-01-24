@@ -218,6 +218,7 @@ out:
 			// Send answer
 			var resp PeerAddrs
 			resp.peers = Syncher.PM.PeerAddrs(msg.Capabilities)
+
 			p.WriteMessage(&resp)
 
 		case consensus.MsgTypePeerAddrs:
@@ -228,7 +229,7 @@ out:
 				break out
 			}
 
-			logrus.Infof("adding %d peers", len(msg.peers))
+			logrus.Infof("received %d peers", len(msg.peers))
 			for _, p := range msg.peers {
 				Syncher.PM.AddPeer(p.String())
 			}

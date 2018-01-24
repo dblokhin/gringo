@@ -103,6 +103,9 @@ func (pm *peerManager) AddPeer(addr string) {
 	pm.PeersTable[addr] = &peerInfo{
 		psNew,
 		nil,
+		0,
+		consensus.ZeroDifficulty,
+		consensus.CapUnknown,
 		time.Unix(0, 0),
 	}
 }
@@ -169,6 +172,9 @@ func (pm *peerManager) connectPeer(addr string) error {
 	pm.PeersTable[addr].Peer = peerConn
 	pm.PeersTable[addr].Status = psConnected
 	pm.PeersTable[addr].LastConn = time.Now()
+	pm.PeersTable[addr].Capabilities = peerConn.Info.Capabilities
+	pm.PeersTable[addr].Height = peerConn.Info.Height
+	pm.PeersTable[addr].TotalDifficulty = peerConn.Info.TotalDifficulty
 
 	// And send ping / peers request
 	peerConn.Start()
@@ -239,6 +245,10 @@ func (pm *peerManager) notConnected() string {
 type peerInfo struct {
 	Status peerStatus
 	Peer   *Peer
+
+	Height uint64
+	TotalDifficulty consensus.Difficulty
+	Capabilities consensus.Capabilities
 
 	LastConn time.Time
 }
