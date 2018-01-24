@@ -188,8 +188,6 @@ func (p *PeerError) Read(r io.Reader) error {
 		return err
 	}
 
-	logrus.Debug("messageLen: ", messageLen)
-
 	buff := make([]byte, messageLen)
 	if _, err := io.ReadFull(r, buff); err != nil {
 		return err

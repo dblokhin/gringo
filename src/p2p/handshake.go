@@ -35,7 +35,6 @@ type hand struct {
 }
 
 func (h *hand) Bytes() []byte {
-	logrus.Info("hand struct to bytes")
 	buff := new(bytes.Buffer)
 
 	if err := binary.Write(buff, binary.BigEndian, h.Version); err != nil {
@@ -196,8 +195,6 @@ func (h *hand) Read(r io.Reader) error {
 		return err
 	}
 
-	logrus.Debug("userAgentlen: ", userAgentLen)
-
 	buff := make([]byte, userAgentLen)
 	if _, err := io.ReadFull(r, buff); err != nil {
 		return err
@@ -223,7 +220,6 @@ type shake struct {
 }
 
 func (h *shake) Bytes() []byte {
-	logrus.Info("shake struct to bytes")
 	buff := new(bytes.Buffer)
 
 	if err := binary.Write(buff, binary.BigEndian, h.Version); err != nil {
@@ -272,8 +268,6 @@ func (h *shake) Read(r io.Reader) error {
 		return err
 	}
 
-	logrus.Debug("userAgentlen: ", userAgentLen)
-
 	buff := make([]byte, userAgentLen)
 	if _, err := io.ReadFull(r, buff); err != nil {
 		return err
@@ -285,8 +279,6 @@ func (h *shake) Read(r io.Reader) error {
 
 // shakeByHand sends hand to receive shake
 func shakeByHand(conn net.Conn) (*shake, error) {
-
-	logrus.Info("start peer shakeByHand")
 	// create hand
 	// TODO: use the server listen addr
 	sender := conn.LocalAddr().(*net.TCPAddr)
@@ -302,20 +294,16 @@ func shakeByHand(conn net.Conn) (*shake, error) {
 		UserAgent:       userAgent,
 	}
 
-	logrus.Info("send hand to peer")
 	// Send own hand
 	if _, err := WriteMessage(conn, &msg); err != nil {
 		return nil, err
 	}
-
-	logrus.Info("recv shake from peer")
 
 	// Read peer shake
 	sh := new(shake)
 	if _, err := ReadMessage(conn, sh); err != nil {
 		return nil, err
 	}
-	logrus.Debug("receive shake: ", sh)
 
 	return sh, nil
 }
@@ -323,15 +311,12 @@ func shakeByHand(conn net.Conn) (*shake, error) {
 // handByShake sends shake and return received hand
 func handByShake(conn net.Conn) (*hand, error) {
 
-	logrus.Info("start peer shakeByHand")
 	var h hand
 
 	// Recv remote hand
 	if _, err := ReadMessage(conn, &h); err != nil {
 		return nil, err
 	}
-
-	logrus.Debug("receive shake: ", h)
 
 	// Check nonce to detect connection to ourselves
 	if serverNonces.Consist(h.Nonce) {
@@ -349,7 +334,6 @@ func handByShake(conn net.Conn) (*hand, error) {
 	if _, err := WriteMessage(conn, &msg); err != nil {
 		return nil, err
 	}
-
 
 	return &h, nil
 }

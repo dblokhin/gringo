@@ -110,7 +110,6 @@ func (b *Block) Type() uint8 {
 // Read implements p2p Message interface
 func (b *Block) Read(r io.Reader) error {
 	// Read block header
-	logrus.Info("Read block header")
 	if err := b.Header.Read(r); err != nil {
 		return err
 	}
@@ -129,10 +128,7 @@ func (b *Block) Read(r io.Reader) error {
 		return err
 	}
 
-	logrus.Debugf("block inputs/outputs/kernels: %d, %d, %d", inputs, outputs, kernels)
-
 	// Read inputs
-	logrus.Info("Read inputs")
 	b.Inputs = make([]Input, inputs)
 	for i := uint64(0); i < inputs; i++ {
 		commitment := make([]byte, secp256k1zkp.PedersenCommitmentSize)
@@ -143,10 +139,7 @@ func (b *Block) Read(r io.Reader) error {
 		b.Inputs[i].Commit = commitment
 	}
 
-	logrus.Debug("block inputs: ", b.Inputs)
-
 	// Read outputs
-	logrus.Info("Read outputs")
 	b.Outputs = make([]Output, outputs)
 	for i := uint64(0); i < outputs; i++ {
 		if err := b.Outputs[i].Read(r); err != nil {
@@ -154,18 +147,13 @@ func (b *Block) Read(r io.Reader) error {
 		}
 	}
 
-	logrus.Debug("block outputs: ", b.Outputs)
-
 	// Read kernels
-	logrus.Info("Read kernels")
 	b.Kernels = make([]TxKernel, kernels)
 	for i := uint64(0); i < kernels; i++ {
 		if err := b.Kernels[i].Read(r); err != nil {
 			return err
 		}
 	}
-
-	logrus.Debug("block kernels: ", b.Kernels)
 
 	// Check sorted input, output requiring consensus rule!
 	if !sort.IsSorted(b.Inputs) {
