@@ -120,7 +120,7 @@ func (pm *peerManager) PeerAddrs(capabilities consensus.Capabilities) []*net.TCP
 	defer pm.Unlock()
 
 	for addr, v := range pm.PeersTable {
-		if v.Status == psBanned {
+		if v.Status == psBanned || v.Status == psFailedConn {
 			continue
 		}
 
@@ -194,7 +194,7 @@ func (pm *peerManager) connectPeer(addr string) error {
 	// on disconnect update info
 	go func() {
 		peerConn.WaitForDisconnect()
-
+		logrus.Info("closed connection")
 		pm.Lock()
 		pm.connected--
 		pm.PeersTable[addr].Status = psDisconnected
@@ -243,8 +243,16 @@ func (pm *peerManager) notConnected() string {
 	pm.Lock()
 	defer pm.Unlock()
 
+	// first, find good peers
 	for addr, peer := range pm.PeersTable {
 		if peer.Status == psNew || peer.Status == psDisconnected {
+			return addr
+		}
+	}
+
+	// second, try to open conn with failed nodes
+	for addr, peer := range pm.PeersTable {
+		if peer.Status == psFailedConn {
 			return addr
 		}
 	}
