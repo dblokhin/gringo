@@ -25,11 +25,12 @@ var (
 // NewPeersPool returns peers pool instance
 func NewPeersPool(sync *Syncer) *peersPool {
 	pp := &peersPool{
-		connected:  0,
-		sync:       sync,
-		pool:       make(chan struct{}, maxOnlineConnections),
-		quit:       make(chan int),
-		PeersTable: make(map[string]*peerInfo),
+		connected:      0,
+		sync:           sync,
+		pool:           make(chan struct{}, maxOnlineConnections),
+		quit:           make(chan int),
+		PeersTable:     make(map[string]*peerInfo),
+		ConnectedPeers: make(map[string]*peerInfo),
 	}
 
 	return pp
@@ -45,7 +46,11 @@ type peersPool struct {
 	pool chan struct{}
 	quit chan int
 
+	// all peers
 	PeersTable map[string]*peerInfo
+
+	// connected peers table
+	ConnectedPeers map[string]*peerInfo
 }
 
 // Ban closes connection & ban peer
@@ -105,14 +110,14 @@ func (pp *peersPool) Add(addr string) {
 	}
 
 	// Adds new
-	pp.PeersTable[addr] = &peerInfo {
-		Status: psNew,
-		Peer: nil,
+	pp.PeersTable[addr] = &peerInfo{
+		Status:          psNew,
+		Peer:            nil,
 		ProtocolVersion: 0,
-		Height: 0,
+		Height:          0,
 		TotalDifficulty: consensus.ZeroDifficulty,
-		Capabilities: consensus.CapUnknown,
-		LastConn: time.Unix(0, 0),
+		Capabilities:    consensus.CapUnknown,
+		LastConn:        time.Unix(0, 0),
 	}
 }
 
@@ -162,6 +167,26 @@ func (pp *peersPool) PeerInfo(addr string) *peerInfo {
 	return nil
 }
 
+// PropagateBlock propagates block to connected peers
+func (pp *peersPool) PropagateBlock(block consensus.Block) {
+	pp.Lock()
+	defer pp.Unlock()
+
+	for _, pi := range pp.ConnectedPeers {
+		go func(peerInfo *peerInfo) {
+			peerInfo.Lock()
+			defer peerInfo.Unlock()
+
+			// propagate if peer height or totalDiff less than newest block
+			if peerInfo.Height < block.Header.Height || peerInfo.TotalDifficulty < block.Header.TotalDifficulty {
+				if peer := peerInfo.Peer; peer != nil {
+					peer.SendBlock(block)
+				}
+			}
+		}(pi)
+	}
+}
+
 // connectPeer connects peer from peerTable
 func (pp *peersPool) connectPeer(addr string) error {
 	// for empty string nonerror exit
@@ -202,6 +227,7 @@ func (pp *peersPool) connectPeer(addr string) error {
 	pp.Lock()
 	pp.connected++
 
+	// update peers table
 	pp.PeersTable[addr].Peer = peerConn
 	pp.PeersTable[addr].Status = psConnected
 	pp.PeersTable[addr].LastConn = time.Now()
@@ -210,6 +236,9 @@ func (pp *peersPool) connectPeer(addr string) error {
 	pp.PeersTable[addr].Height = peerConn.Info.Height
 	pp.PeersTable[addr].TotalDifficulty = peerConn.Info.TotalDifficulty
 	pp.PeersTable[addr].Capabilities = peerConn.Info.Capabilities
+
+	// update connected peers
+	pp.ConnectedPeers[addr] = pp.PeersTable[addr]
 	pp.Unlock()
 
 	// And send ping / peers request
@@ -223,7 +252,9 @@ func (pp *peersPool) connectPeer(addr string) error {
 		logrus.Info("closed connection")
 		pp.Lock()
 		pp.connected--
+		// update peers & connected peers tables
 		pp.PeersTable[addr].Status = psDisconnected
+		delete(pp.ConnectedPeers, addr)
 		pp.Unlock()
 
 		<-pp.pool
