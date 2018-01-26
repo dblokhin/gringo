@@ -156,6 +156,16 @@ func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
 			s.Pool.Ban(peer.conn.RemoteAddr().String())
 		}
 
+		// update peer info
+		peerInfo.Lock()
+
+		if peerInfo.TotalDifficulty < msg.Header.TotalDifficulty || peerInfo.Height < msg.Header.Height {
+			peerInfo.TotalDifficulty = msg.Header.TotalDifficulty
+			peerInfo.Height = msg.Header.Height
+		}
+
+		peerInfo.Unlock()
+
 		// propagate if it is top block
 		if msg.Header.Height == s.Chain.Height() {
 			s.Pool.PropagateBlock(msg)
