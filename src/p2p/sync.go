@@ -6,9 +6,16 @@ package p2p
 
 import (
 	"consensus"
+	"github.com/sirupsen/logrus"
 )
 
 type Blockchain interface {
+	// Requite a mutex
+	Lock()
+	Unlock()
+	RLock()
+	RUnlock()
+
 	Genesis() consensus.Block
 	TotalDifficulty() consensus.Difficulty
 	Height() uint64
@@ -44,6 +51,9 @@ type PeersPool interface {
 	// Peers returns live peers list (without banned)
 	Peers(capabilities consensus.Capabilities) *PeerAddrs
 
+	// PeerInfo returns peer structure
+	PeerInfo(addr string) *peerInfo
+
 	// Add peer
 	Add(sync *Syncer, addr string)
 
@@ -57,39 +67,53 @@ type Syncer struct {
 	Pool PeersPool
 
 	// Pool of peers (peers manager)
-	PM *peerManager
+	PM *peersPool
 }
 
 // Start starts sync proccess with initial peer addrs
 func (s *Syncer) Start(addrs []string) {
-	s.PM = newPM()
+	s.PM = NewPeersPool(s)
 	for _, addr := range addrs {
-		s.PM.AddPeer(addr)
+		s.PM.Add(addr)
 	}
 
 	go s.PM.Run()
 	<-s.PM.quit
 }
 
-func (s *Syncer) ProcessMessage(peer *Peer, message Message) error {
+func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
+
+	peerInfo := s.Pool.PeerInfo(peer.Addr)
+	if peerInfo == nil {
+		// should never rich
+		logrus.Fatal("unexpected error")
+	}
 
 	switch msg := message.(type) {
 	case Ping:
 		// update peer info
-		peer.Info.TotalDifficulty = msg.TotalDifficulty
-		peer.Info.Height = msg.Height
+		peerInfo.Lock()
+		peerInfo.TotalDifficulty = msg.TotalDifficulty
+		peerInfo.Height = msg.Height
+		peerInfo.Unlock()
 
 		// send answer
 		var resp Pong
+
+		// Lock the chain before getting various params
+		s.Chain.RLock()
 		resp.TotalDifficulty = s.Chain.TotalDifficulty()
 		resp.Height = s.Chain.Height()
+		s.Chain.RUnlock()
 
 		peer.WriteMessage(&resp)
 
 	case Pong:
 		// update peer info
-		peer.Info.TotalDifficulty = msg.TotalDifficulty
-		peer.Info.Height = msg.Height
+		peerInfo.Lock()
+		peerInfo.TotalDifficulty = msg.TotalDifficulty
+		peerInfo.Height = msg.Height
+		peerInfo.Unlock()
 
 	case GetPeerAddrs:
 		// Send answer

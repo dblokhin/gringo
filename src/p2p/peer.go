@@ -16,7 +16,7 @@ import (
 	"encoding/hex"
 )
 
-// Peer is a participant of p2p network
+// PeerInfo is a participant of p2p network
 type Peer struct {
 	conn net.Conn
 	sync *Syncer
@@ -33,6 +33,9 @@ type Peer struct {
 
 	// disconnect flag
 	disconnect int32
+
+	// Network addr
+	Addr string
 
 	// Info connected peer
 	Info struct {
@@ -76,6 +79,9 @@ func NewPeer(sync *Syncer, addr string) (*Peer, error) {
 	p.sync = sync
 	p.quit = make(chan struct{})
 	p.sendQueue = make(chan Message)
+
+	// Store the network addr
+	p.Addr = addr
 
 	p.Info.Version = shake.Version
 	p.Info.Capabilities = shake.Capabilities
