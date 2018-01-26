@@ -56,24 +56,26 @@ type peersPool struct {
 // Ban closes connection & ban peer
 func (pp *peersPool) Ban(addr string) {
 	pp.Lock()
-	peer, ok := pp.PeersTable[addr]
-	if ok {
-		peer.Status = psBanned
-	}
+	peerInfo, ok := pp.PeersTable[addr]
 	pp.Unlock()
 
-	// Close connection
-	peer.Peer.Close()
+	if !ok {
+		return
+	}
+
+	// Mark banned & Close connection
+	peerInfo.Status = psBanned
+	peerInfo.Peer.Close()
 }
 
 // IsBan returns true if addr is banned
 func (pp *peersPool) IsBan(addr string) bool {
 	pp.Lock()
-	peer, ok := pp.PeersTable[addr]
+	peerInfo, ok := pp.PeersTable[addr]
 	pp.Unlock()
 
 	if ok {
-		return peer.Status == psBanned
+		return peerInfo.Status == psBanned
 	}
 
 	return false
@@ -81,11 +83,6 @@ func (pp *peersPool) IsBan(addr string) bool {
 
 // AddPeer adds new peer addr to pm
 func (pp *peersPool) Add(addr string) {
-	// Don't add if big peer table
-	if len(pp.PeersTable) > maxPeersTableSize {
-		return
-	}
-
 	netAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		// dont add invalid tcp addrs
@@ -103,6 +100,11 @@ func (pp *peersPool) Add(addr string) {
 
 	pp.Lock()
 	defer pp.Unlock()
+
+	// Don't add if big peer table
+	if len(pp.PeersTable) > maxPeersTableSize {
+		return
+	}
 
 	// Checks for existing
 	if _, ok := pp.PeersTable[addr]; ok {
@@ -129,13 +131,13 @@ func (pp *peersPool) Peers(capabilities consensus.Capabilities) *PeerAddrs {
 	pp.Lock()
 	defer pp.Unlock()
 
-	for addr, v := range pp.PeersTable {
-		if v.Status == psBanned || v.Status == psFailedConn {
+	for addr, peerInfo := range pp.PeersTable {
+		if peerInfo.Status == psBanned || peerInfo.Status == psFailedConn {
 			continue
 		}
 
 		// filter by capabilities
-		if (v.Capabilities & capabilities) != capabilities {
+		if (peerInfo.Capabilities & capabilities) != capabilities {
 			continue
 		}
 
@@ -158,10 +160,10 @@ func (pp *peersPool) Peers(capabilities consensus.Capabilities) *PeerAddrs {
 // PeerInfo returns peer structure
 func (pp *peersPool) PeerInfo(addr string) *peerInfo {
 	pp.Lock()
-	peer, ok := pp.PeersTable[addr]
+	peerInfo, ok := pp.PeersTable[addr]
 	pp.Unlock()
 	if ok {
-		return peer
+		return peerInfo
 	}
 
 	return nil
@@ -194,28 +196,29 @@ func (pp *peersPool) connectPeer(addr string) error {
 		return nil
 	}
 
+	if pp.connected > int32(maxOnlineConnections) {
+		return errors.New("too big online peers connections")
+	}
+
 	pp.Lock()
-	peer, ok := pp.PeersTable[addr]
+	peerInfo, ok := pp.PeersTable[addr]
 	pp.Unlock()
 
 	if !ok {
 		return errors.New("peer doesn't exists at peersTable")
 	}
 
-	if peer.Status == psBanned || peer.Status == psConnected {
+	peerInfo.Lock()
+	defer peerInfo.Unlock()
+
+	if peerInfo.Status == psBanned || peerInfo.Status == psConnected {
 		logrus.Debug("dont connect to banned host (or already connected)")
 		return nil
 	}
 
-	if atomic.LoadInt32(&pp.connected) > int32(maxOnlineConnections) {
-		return errors.New("too big online peers connections")
-	}
-
 	peerConn, err := NewPeer(pp.sync, addr)
 	if err != nil {
-		pp.Lock()
-		pp.PeersTable[addr].Status = psFailedConn
-		pp.Unlock()
+		peerInfo.Status = psFailedConn
 		return err
 	}
 
@@ -224,21 +227,21 @@ func (pp *peersPool) connectPeer(addr string) error {
 		return fmt.Errorf("unexpected protocolVersion: %d", peerConn.Info.Version)
 	}
 
-	pp.Lock()
 	pp.connected++
 
 	// update peers table
-	pp.PeersTable[addr].Peer = peerConn
-	pp.PeersTable[addr].Status = psConnected
-	pp.PeersTable[addr].LastConn = time.Now()
+	peerInfo.Peer = peerConn
+	peerInfo.Status = psConnected
+	peerInfo.LastConn = time.Now()
 
-	pp.PeersTable[addr].ProtocolVersion = peerConn.Info.Version
-	pp.PeersTable[addr].Height = peerConn.Info.Height
-	pp.PeersTable[addr].TotalDifficulty = peerConn.Info.TotalDifficulty
-	pp.PeersTable[addr].Capabilities = peerConn.Info.Capabilities
+	peerInfo.ProtocolVersion = peerConn.Info.Version
+	peerInfo.Height = peerConn.Info.Height
+	peerInfo.TotalDifficulty = peerConn.Info.TotalDifficulty
+	peerInfo.Capabilities = peerConn.Info.Capabilities
 
 	// update connected peers
-	pp.ConnectedPeers[addr] = pp.PeersTable[addr]
+	pp.Lock()
+	pp.ConnectedPeers[addr] = peerInfo
 	pp.Unlock()
 
 	// And send ping / peers request
@@ -250,10 +253,15 @@ func (pp *peersPool) connectPeer(addr string) error {
 	go func() {
 		peerConn.WaitForDisconnect()
 		logrus.Info("closed connection")
+
+		// update peers & connected peers tables
+		peerInfo.Lock()
+		peerInfo.Status = psDisconnected
+		peerInfo.Unlock()
+
+		// clean connected peers
 		pp.Lock()
 		pp.connected--
-		// update peers & connected peers tables
-		pp.PeersTable[addr].Status = psDisconnected
 		delete(pp.ConnectedPeers, addr)
 		pp.Unlock()
 
@@ -284,9 +292,14 @@ out:
 
 	// Close all connections
 	pp.Lock()
-	for _, peer := range pp.PeersTable {
-		peer.Peer.Close()
-		peer.Status = psDisconnected
+	for _, pi := range pp.PeersTable {
+		go func(peerInfo *peerInfo) {
+			peerInfo.Lock()
+			peerInfo.Peer.Close()
+			peerInfo.Status = psDisconnected
+			peerInfo.Unlock()
+		}(pi)
+
 	}
 	pp.Unlock()
 }
@@ -302,8 +315,8 @@ func (pp *peersPool) notConnected() string {
 	defer pp.Unlock()
 
 	// first, find good peers
-	for addr, peer := range pp.PeersTable {
-		if peer.Status == psNew || peer.Status == psDisconnected {
+	for addr, peerInfo := range pp.PeersTable {
+		if peerInfo.Status == psNew || peerInfo.Status == psDisconnected {
 			return addr
 		}
 	}
