@@ -44,11 +44,12 @@ func WriteMessage(w io.Writer, msg Message) (uint64, error) {
 		return 0, err
 	}
 
-	if n, err := wr.Write(data); err != nil {
+	n, err := wr.Write(data)
+	if err != nil {
 		return uint64(n) + consensus.HeaderLen, err
-	} else {
-		return uint64(n) + consensus.HeaderLen, wr.Flush()
 	}
+
+	return uint64(n) + consensus.HeaderLen, wr.Flush()
 }
 
 // ReadMessage reads from r (net.conn) protocol message

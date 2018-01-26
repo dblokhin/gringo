@@ -245,11 +245,12 @@ func (p *PeerAddrs) Read(r io.Reader) error {
 	}
 
 	for i := uint32(0); i < peersCount; i++ {
-		if addr, err := deserializeTCPAddr(r); err != nil {
+		addr, err := deserializeTCPAddr(r)
+		if err != nil {
 			return err
-		} else {
-			p.peers = append(p.peers, addr)
 		}
+
+		p.peers = append(p.peers, addr)
 	}
 
 	return nil
@@ -260,13 +261,13 @@ func (p PeerAddrs) String() string {
 	return fmt.Sprintf("%#v", p)
 }
 
-// GetBlockHash message for requesting block by hash
-type GetBlockHash struct {
+// GetBlock message for requesting block by hash
+type GetBlock struct {
 	Hash consensus.BlockHash
 }
 
 // Bytes implements Message interface
-func (h *GetBlockHash) Bytes() []byte {
+func (h *GetBlock) Bytes() []byte {
 	if len(h.Hash) != consensus.BlockHashSize {
 		logrus.Fatal(errors.New("invalid block hash len"))
 	}
@@ -275,12 +276,12 @@ func (h *GetBlockHash) Bytes() []byte {
 }
 
 // Type implements Message interface
-func (h *GetBlockHash) Type() uint8 {
+func (h *GetBlock) Type() uint8 {
 	return consensus.MsgTypeGetBlock
 }
 
 // Read implements Message interface
-func (h *GetBlockHash) Read(r io.Reader) error {
+func (h *GetBlock) Read(r io.Reader) error {
 
 	hash := make([]byte, consensus.BlockHashSize)
 	_, err := io.ReadFull(r, hash)
@@ -290,8 +291,8 @@ func (h *GetBlockHash) Read(r io.Reader) error {
 }
 
 // String implements String() interface
-func (p GetBlockHash) String() string {
-	return fmt.Sprintf("%#v", p)
+func (h GetBlock) String() string {
+	return fmt.Sprintf("%#v", h)
 }
 
 // BlockHeaders message with grin headers
@@ -349,11 +350,11 @@ func (h *BlockHeaders) Read(r io.Reader) error {
 }
 
 // String implements String() interface
-func (p BlockHeaders) String() string {
-	return fmt.Sprintf("%#v", p)
+func (h BlockHeaders) String() string {
+	return fmt.Sprintf("%#v", h)
 }
 
-// GetBlockHash message for requesting headers
+// GetBlockHeaders message for requesting headers
 type GetBlockHeaders struct {
 	Locator consensus.Locator
 }
@@ -374,6 +375,6 @@ func (h *GetBlockHeaders) Read(r io.Reader) error {
 }
 
 // String implements String() interface
-func (p GetBlockHeaders) String() string {
-	return fmt.Sprintf("%#v", p)
+func (h GetBlockHeaders) String() string {
+	return fmt.Sprintf("%#v", h)
 }

@@ -260,7 +260,7 @@ out:
 		case consensus.MsgTypeGetBlock:
 			logrus.Infof("receiving block request (%s)", p.conn.RemoteAddr().String())
 
-			var msg GetBlockHash
+			var msg GetBlock
 			if exitError = msg.Read(rl); exitError != nil {
 				break out
 			}
@@ -340,7 +340,7 @@ func (p *Peer) SendPing() {
 func (p *Peer) SendBlockRequest(hash consensus.BlockHash) {
 	logrus.Info("sending block request")
 
-	var request GetBlockHash
+	var request GetBlock
 	request.Hash = hash
 
 	logrus.Debug("block hash: ", hash)

@@ -78,18 +78,19 @@ func (pm *peerManager) AddPeer(addr string) {
 		return
 	}
 
-	if netAddr, err := net.ResolveTCPAddr("tcp", addr); err != nil {
+	netAddr, err := net.ResolveTCPAddr("tcp", addr)
+	if err != nil {
 		// dont add invalid tcp addrs
 		return
-	} else {
-		// FIXME: discard another IPs
-		if netAddr.IP.IsMulticast() {
-			return
-		}
+	}
 
-		if netAddr.Port == 0 {
-			return
-		}
+	// FIXME: discard another IPs
+	if netAddr.IP.IsMulticast() {
+		return
+	}
+
+	if netAddr.Port == 0 {
+		return
 	}
 
 	pm.Lock()

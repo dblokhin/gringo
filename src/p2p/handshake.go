@@ -97,18 +97,18 @@ func (h *hand) Read(r io.Reader) error {
 	}
 
 	// read Sender addr
-	if addr, err := deserializeTCPAddr(r); err != nil {
+	addr, err := deserializeTCPAddr(r)
+	if err != nil {
 		return err
-	} else {
-		h.SenderAddr = addr
 	}
+	h.SenderAddr = addr
 
 	// read Recv addr
-	if addr, err := deserializeTCPAddr(r); err != nil {
+	addr, err = deserializeTCPAddr(r)
+	if err != nil {
 		return err
-	} else {
-		h.ReceiverAddr = addr
 	}
+	h.ReceiverAddr = addr
 
 	// read user agent
 	var userAgentLen uint64
