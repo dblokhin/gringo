@@ -9,7 +9,6 @@ import (
 	"net"
 	"github.com/sirupsen/logrus"
 	"encoding/binary"
-	"errors"
 	"fmt"
 )
 

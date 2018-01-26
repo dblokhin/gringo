@@ -11,7 +11,6 @@ import (
 	"errors"
 	"github.com/sirupsen/logrus"
 	"net"
-	"sync/atomic"
 	"fmt"
 )
 
@@ -22,8 +21,8 @@ var (
 	maxPeersTableSize    = 10000
 )
 
-// NewPeersPool returns peers pool instance
-func NewPeersPool(sync *Syncer) *peersPool {
+// newPeersPool returns peers pool instance
+func newPeersPool(sync *Syncer) *peersPool {
 	pp := &peersPool{
 		connected:      0,
 		sync:           sync,
@@ -170,7 +169,7 @@ func (pp *peersPool) PeerInfo(addr string) *peerInfo {
 }
 
 // PropagateBlock propagates block to connected peers
-func (pp *peersPool) PropagateBlock(block consensus.Block) {
+func (pp *peersPool) PropagateBlock(block *consensus.Block) {
 	pp.Lock()
 	defer pp.Unlock()
 
@@ -304,8 +303,8 @@ out:
 	pp.Unlock()
 }
 
-// Close stops network activity
-func (pp *peersPool) Close() {
+// Stop stops network activity
+func (pp *peersPool) Stop() {
 	close(pp.quit)
 }
 

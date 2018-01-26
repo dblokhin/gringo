@@ -16,7 +16,7 @@ import (
 	"encoding/hex"
 )
 
-// PeerInfo is a participant of p2p network
+// Peer is a participant of p2p network
 type Peer struct {
 	conn net.Conn
 	sync *Syncer
@@ -340,9 +340,9 @@ func (p *Peer) SendBlockRequest(hash consensus.BlockHash) {
 }
 
 // SendBlock sends Block to peer
-func (p *Peer) SendBlock(block consensus.Block) {
+func (p *Peer) SendBlock(block *consensus.Block) {
 	logrus.Info("sending block, height: ", block.Header.Height)
-	p.WriteMessage(&block)
+	p.WriteMessage(block)
 }
 
 // SendPeerRequest sends peer request

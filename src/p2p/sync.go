@@ -19,13 +19,13 @@ type Blockchain interface {
 	Genesis() consensus.Block
 	TotalDifficulty() consensus.Difficulty
 	Height() uint64
-	GetBlockHeaders(loc consensus.Locator) *BlockHeaders
+	GetBlockHeaders(loc consensus.Locator) []consensus.BlockHeader
 	GetBlock(hash consensus.BlockHash) *consensus.Block
 
 	// ProcessHeaders processing block headers
 	// Validate blockchain rules
 	// ban peer with consensus error
-	ProcessHeaders(headers BlockHeaders) error
+	ProcessHeaders(headers []consensus.BlockHeader) error
 
 	// ProcessBlock processing block
 	// Validate blockchain rules
@@ -34,19 +34,19 @@ type Blockchain interface {
 
 	// propagate block on new block to connected peer with less Height
 	// clear tx's from pool on new block
-	ProcessBlock(block consensus.Block) error
+	ProcessBlock(block *consensus.Block) error
 }
 
 type Mempool interface {
 	// ProcessTx processing transaction
 	// Validate blockchain rules
 	// ban peer with consensus error
-	ProcessTx(transaction consensus.Transaction) error
+	ProcessTx(transaction *consensus.Transaction) error
 }
 
 type PeersPool interface {
 	// PropagateBlock block to connected peer with less Height
-	PropagateBlock(block consensus.Block)
+	PropagateBlock(block *consensus.Block)
 
 	// Peers returns live peers list (without banned)
 	Peers(capabilities consensus.Capabilities) *PeerAddrs
@@ -55,30 +55,44 @@ type PeersPool interface {
 	PeerInfo(addr string) *peerInfo
 
 	// Add peer
-	Add(sync *Syncer, addr string)
+	Add(addr string)
 
 	// Ban peer & ensure closed connection
 	Ban(addr string)
+
+	// Run & stop
+	Run()
+	Stop()
 }
 
+// Syncer synchronize blockchain & mempool via peers pool
 type Syncer struct {
+	// Chain is a grin blockchain
 	Chain Blockchain
 	Mempool Mempool
-	Pool PeersPool
 
 	// Pool of peers (peers manager)
-	PM *peersPool
+	Pool PeersPool
 }
 
 // Start starts sync proccess with initial peer addrs
-func (s *Syncer) Start(addrs []string) {
-	s.PM = NewPeersPool(s)
+func NewSyncer(addrs []string, chain Blockchain, mempool Mempool) *Syncer {
+
+	sync := new(Syncer)
+	sync.Chain = chain
+	sync.Mempool = mempool
+	sync.Pool = newPeersPool(sync)
+
 	for _, addr := range addrs {
-		s.PM.Add(addr)
+		sync.Pool.Add(addr)
 	}
 
-	go s.PM.Run()
-	<-s.PM.quit
+	return sync
+}
+
+// Stop stops activity
+func (s *Syncer) Stop() {
+	s.Pool.Stop()
 }
 
 func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
@@ -90,7 +104,7 @@ func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
 	}
 
 	switch msg := message.(type) {
-	case Ping:
+	case *Ping:
 		// update peer info
 		peerInfo.Lock()
 		peerInfo.TotalDifficulty = msg.TotalDifficulty
@@ -107,47 +121,52 @@ func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
 		s.Chain.RUnlock()
 
 		peer.WriteMessage(&resp)
+		logrus.Infof("sended pong")
 
-	case Pong:
+	case *Pong:
 		// update peer info
 		peerInfo.Lock()
 		peerInfo.TotalDifficulty = msg.TotalDifficulty
 		peerInfo.Height = msg.Height
 		peerInfo.Unlock()
 
-	case GetPeerAddrs:
+	case *GetPeerAddrs:
 		// Send answer
 		peers := s.Pool.Peers(msg.Capabilities)
 		if peers != nil {
 			peer.WriteMessage(peers)
 		}
+		logrus.Infof("sended peers (%d)", len(peers.peers))
 
-	case PeerAddrs:
+	case *PeerAddrs:
 		// Adding peer to pool
 		for _, p := range msg.peers {
-			s.Pool.Add(s, p.String())
+			s.Pool.Add(p.String())
 		}
 
-	case GetBlockHeaders:
+	case *GetBlockHeaders:
 		// send answer
 		headers := s.Chain.GetBlockHeaders(msg.Locator)
+		resp := BlockHeaders {
+			Headers: headers,
+		}
 		if headers != nil {
-			peer.WriteMessage(headers)
+			peer.WriteMessage(&resp)
 		}
 
-	case BlockHeaders:
-		if err := s.Chain.ProcessHeaders(msg); err != nil {
+	case *BlockHeaders:
+		if err := s.Chain.ProcessHeaders(msg.Headers); err != nil {
 			// ban peer ?
 			s.Pool.Ban(peer.conn.RemoteAddr().String())
 		}
 
-	case GetBlock:
+	case *GetBlock:
 		block := s.Chain.GetBlock(msg.Hash)
 		if block != nil {
 			peer.WriteMessage(block)
 		}
 
-	case consensus.Block:
+	case *consensus.Block:
 		// ProcessBlock puts block into blockchain
 		// if block on the top of chain than propagate it
 		// to others nodes with less TotalDifficulty
@@ -171,7 +190,7 @@ func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
 			s.Pool.PropagateBlock(msg)
 		}
 
-	case consensus.Transaction:
+	case *consensus.Transaction:
 		if err := s.Mempool.ProcessTx(msg); err != nil {
 			// ban peer ?
 			s.Pool.Ban(peer.conn.RemoteAddr().String())
