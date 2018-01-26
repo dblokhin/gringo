@@ -19,6 +19,7 @@ import (
 // Peer is a participant of p2p network
 type Peer struct {
 	conn net.Conn
+	sync *Syncer
 
 	// The following fields are only meant to be used *atomically*
 	bytesReceived uint64
@@ -50,7 +51,7 @@ type Peer struct {
 }
 
 // NewPeer connects to peer
-func NewPeer(addr string) (*Peer, error) {
+func NewPeer(sync *Syncer, addr string) (*Peer, error) {
 
 	logrus.Infof("starting new peer (%s)", addr)
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
@@ -58,6 +59,7 @@ func NewPeer(addr string) (*Peer, error) {
 		return nil, err
 	}
 
+	// dial connection
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
 		return nil, err
@@ -71,6 +73,7 @@ func NewPeer(addr string) (*Peer, error) {
 
 	p := new(Peer)
 	p.conn = conn
+	p.sync = sync
 	p.quit = make(chan struct{})
 	p.sendQueue = make(chan Message)
 
@@ -183,18 +186,8 @@ out:
 				break out
 			}
 
-			// update info
-			p.Info.TotalDifficulty = msg.TotalDifficulty
-			p.Info.Height = msg.Height
-
+			p.sync.ProcessMessage(p, &msg)
 			logrus.Debugf("received Ping (%s): %s", p.conn.RemoteAddr().String(), msg.String())
-			// send Pong
-			// TODO: send actual blockchain state
-			var resp Pong
-			resp.TotalDifficulty = consensus.Difficulty(1)
-			resp.Height = 1
-
-			p.WriteMessage(&resp)
 
 		case consensus.MsgTypePong:
 			// update peer info
@@ -203,9 +196,7 @@ out:
 				break out
 			}
 
-			// update info
-			p.Info.TotalDifficulty = msg.TotalDifficulty
-			p.Info.Height = msg.Height
+			p.sync.ProcessMessage(p, &msg)
 
 		case consensus.MsgTypeGetPeerAddrs:
 			logrus.Infof("receiving peer request (%s)", p.conn.RemoteAddr().String())
@@ -215,11 +206,7 @@ out:
 				break out
 			}
 
-			// Send answer
-			var resp PeerAddrs
-			resp.peers = Syncher.PM.PeerAddrs(msg.Capabilities)
-
-			p.WriteMessage(&resp)
+			p.sync.ProcessMessage(p, &msg)
 
 		case consensus.MsgTypePeerAddrs:
 			logrus.Infof("receiving peer addrs (%s)", p.conn.RemoteAddr().String())
@@ -230,9 +217,7 @@ out:
 			}
 
 			logrus.Infof("received %d peers", len(msg.peers))
-			for _, p := range msg.peers {
-				Syncher.PM.AddPeer(p.String())
-			}
+			p.sync.ProcessMessage(p, &msg)
 
 
 		case consensus.MsgTypeGetHeaders:
@@ -243,9 +228,7 @@ out:
 				break out
 			}
 
-			// response
-			var resp BlockHeaders
-			p.WriteMessage(&resp)
+			p.sync.ProcessMessage(p, &msg)
 
 		case consensus.MsgTypeHeaders:
 			logrus.Infof("receiving headers (%s)", p.conn.RemoteAddr().String())
@@ -256,6 +239,7 @@ out:
 			}
 
 			logrus.Debug("headers: ", msg.Headers)
+			p.sync.ProcessMessage(p, &msg)
 
 		case consensus.MsgTypeGetBlock:
 			logrus.Infof("receiving block request (%s)", p.conn.RemoteAddr().String())
@@ -265,7 +249,7 @@ out:
 				break out
 			}
 
-			// TODO: Send answer & if not found do not send answer
+			p.sync.ProcessMessage(p, &msg)
 
 		case consensus.MsgTypeBlock:
 			logrus.Infof("receiving block (%s)", p.conn.RemoteAddr().String())
@@ -276,6 +260,7 @@ out:
 			}
 
 			logrus.Info("block hash: ", hex.EncodeToString(msg.Header.Hash()))
+			p.sync.ProcessMessage(p, &msg)
 
 		case consensus.MsgTypeTransaction:
 			logrus.Infof("receiving transaction (%s)", p.conn.RemoteAddr().String())
@@ -286,6 +271,7 @@ out:
 			}
 
 			logrus.Debug("transaction: ", msg)
+			p.sync.ProcessMessage(p, &msg)
 
 		default:
 			logrus.Debug("received unexpected message: ", header)
