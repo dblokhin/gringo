@@ -18,12 +18,14 @@ type Storage interface {
 	GetBlock(id BlockID) (*consensus.Block, error)
 	// Returns list of blocks from id
 	From(id BlockID, limit int) (consensus.BlockList, error)
+	// returns hashes of blockchain
+	BlocksHashes() []consensus.Hash
 }
 
 // BlockID identify block by Hash or/and Height (if not nill)
 type BlockID struct {
 	// Block hash, if nil - use the height
-	Hash *consensus.Hash
+	Hash consensus.Hash
 	// Block height, if nil - use the hash
 	Height *uint64
 }

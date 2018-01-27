@@ -129,6 +129,22 @@ func New(genesis consensus.Block, storage Storage) *Chain {
 	// init header list with genesis header
 	chain.blockHashChain.PushFront(genesis.Hash())
 
+	// init state from storage
+	// setting up currents: height, total diff & blockHashChain
+	blockHashes := storage.BlocksHashes()
+	for _, hash := range blockHashes {
+		chain.blockHashChain.PushBack(hash)
+	}
+
+	lastBlockHash := blockHashes[len(blockHashes) - 1]
+	lastBlock, err := storage.GetBlock(BlockID{Hash: lastBlockHash, Height: nil})
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	chain.totalDifficulty = lastBlock.Header.TotalDifficulty
+	chain.height = lastBlock.Header.Height
+
 	return &chain
 }
 
@@ -180,7 +196,7 @@ func (c *Chain) GetBlockHeaders(loc consensus.Locator) []consensus.BlockHeader {
 				}
 
 				blockID := BlockID{
-					Hash: &blockHash,
+					Hash: blockHash,
 					Height: nil,
 				}
 
@@ -210,7 +226,7 @@ func (c *Chain) GetBlock(hash consensus.Hash) (*consensus.Block, error) {
 	}
 
 	return c.storage.GetBlock(BlockID{
-		Hash:   &hash,
+		Hash:   hash,
 		Height: nil,
 	})
 }
