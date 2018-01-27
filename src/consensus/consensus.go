@@ -82,7 +82,7 @@ const (
 	HardForkInterval uint64 = 250000
 
 	// The minimum mining difficulty we'll allow
-	MinimumDifficulty uint64 = 10
+	MinimumDifficulty uint64 = 1
 
 	// Time window in blocks to calculate block time median
 	MedianTimeWindow uint64 = 11
