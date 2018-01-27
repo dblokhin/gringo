@@ -192,8 +192,8 @@ out:
 				break out
 			}
 
-			p.sync.ProcessMessage(p, &msg)
 			logrus.Debugf("received Ping (%s): %s", p.conn.RemoteAddr().String(), msg.String())
+			p.sync.ProcessMessage(p, &msg)
 
 		case consensus.MsgTypePong:
 			// update peer info

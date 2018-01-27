@@ -152,17 +152,11 @@ func (c *Chain) Genesis() consensus.Block {
 
 // TotalDifficulty returns current total difficulty
 func (c *Chain) TotalDifficulty() consensus.Difficulty {
-	c.RLock()
-	defer c.RUnlock()
-
 	return c.totalDifficulty
 }
 
 // Height returns current height
 func (c *Chain) Height() uint64 {
-	c.RLock()
-	defer c.RUnlock()
-
 	return c.height
 }
 
