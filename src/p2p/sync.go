@@ -20,7 +20,7 @@ type Blockchain interface {
 	TotalDifficulty() consensus.Difficulty
 	Height() uint64
 	GetBlockHeaders(loc consensus.Locator) []consensus.BlockHeader
-	GetBlock(hash consensus.Hash) (*consensus.Block, error)
+	GetBlock(hash consensus.Hash) *consensus.Block
 
 	// ProcessHeaders processing block headers
 	// Validate blockchain rules
@@ -165,12 +165,8 @@ func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
 
 	case *GetBlock:
 		// MUST NOT be answered
-		if block, err := s.Chain.GetBlock(msg.Hash); err != nil {
-			logrus.Error(err)
-		} else {
-			if block != nil {
-				peer.WriteMessage(block)
-			}
+		if block := s.Chain.GetBlock(msg.Hash); block != nil {
+			peer.WriteMessage(block)
 		}
 
 	case *consensus.Block:

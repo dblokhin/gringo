@@ -8,24 +8,18 @@ import "consensus"
 
 // Storage represents storage methods for backends
 // Storage doesnt check consensus rules!
+// all errors in storage are fatals
 type Storage interface {
 	// Adding block to storage
-	AddBlock(block *consensus.Block) error
+	AddBlock(block *consensus.Block)
 	// Del blocks from id and all of child
-	DelBlock(id BlockID) error
+	DelBlock(id consensus.BlockID)
 	// Returns full block by hash or height (or both)
 	// if not found return nil
-	GetBlock(id BlockID) (*consensus.Block, error)
+	GetBlock(id consensus.BlockID) *consensus.Block
 	// Returns list of blocks from id
-	From(id BlockID, limit int) (consensus.BlockList, error)
+	From(id consensus.BlockID, limit int) consensus.BlockList
 	// returns hashes of blockchain
 	BlocksHashes() []consensus.Hash
 }
 
-// BlockID identify block by Hash or/and Height (if not nill)
-type BlockID struct {
-	// Block hash, if nil - use the height
-	Hash consensus.Hash
-	// Block height, if nil - use the hash
-	Height *uint64
-}

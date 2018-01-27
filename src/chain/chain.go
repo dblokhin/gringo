@@ -131,19 +131,16 @@ func New(genesis consensus.Block, storage Storage) *Chain {
 
 	// init state from storage
 	// setting up currents: height, total diff & blockHashChain
-	blockHashes := storage.BlocksHashes()
-	for _, hash := range blockHashes {
-		chain.blockHashChain.PushBack(hash)
-	}
+	if blockHashes := storage.BlocksHashes(); blockHashes != nil {
+		for _, hash := range blockHashes {
+			chain.blockHashChain.PushBack(hash)
+		}
 
-	lastBlockHash := blockHashes[len(blockHashes) - 1]
-	lastBlock, err := storage.GetBlock(BlockID{Hash: lastBlockHash, Height: nil})
-	if err != nil {
-		logrus.Fatal(err)
+		lastBlockHash := blockHashes[len(blockHashes) - 1]
+		lastBlock := storage.GetBlock(consensus.BlockID{Hash: lastBlockHash, Height: nil})
+		chain.totalDifficulty = lastBlock.Header.TotalDifficulty
+		chain.height = lastBlock.Header.Height
 	}
-
-	chain.totalDifficulty = lastBlock.Header.TotalDifficulty
-	chain.height = lastBlock.Header.Height
 
 	return &chain
 }
@@ -195,16 +192,13 @@ func (c *Chain) GetBlockHeaders(loc consensus.Locator) []consensus.BlockHeader {
 					logrus.Fatal("unexpected errors with list of blockHashes")
 				}
 
-				blockID := BlockID{
+				blockID := consensus.BlockID{
 					Hash: blockHash,
 					Height: nil,
 				}
 
 				// get blocks from
-				blockList, err := c.storage.From(blockID, consensus.MaxBlockHeaders)
-				if err != nil {
-					logrus.Error(err)
-				}
+				blockList := c.storage.From(blockID, consensus.MaxBlockHeaders)
 
 				// collect headers
 				for _, block := range blockList {
@@ -220,19 +214,19 @@ func (c *Chain) GetBlockHeaders(loc consensus.Locator) []consensus.BlockHeader {
 }
 
 // GetBlock returns block by hash, if not found returns nil, nil
-func (c *Chain) GetBlock(hash consensus.Hash) (*consensus.Block, error) {
+func (c *Chain) GetBlock(hash consensus.Hash) *consensus.Block {
 	if hash == nil {
-		return nil, nil
+		return nil
 	}
 
-	return c.storage.GetBlock(BlockID{
+	return c.storage.GetBlock(consensus.BlockID{
 		Hash:   hash,
 		Height: nil,
 	})
 }
 
 // GetBlockID returns block by hash, height or both
-func (c *Chain) GetBlockID(b BlockID) (*consensus.Block, error) {
+func (c *Chain) GetBlockID(b consensus.BlockID) *consensus.Block {
 	return c.storage.GetBlock(b)
 }
 
