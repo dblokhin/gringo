@@ -37,7 +37,9 @@ func newPeersPool(sync *Syncer) *peersPool {
 
 // peersPool control connections with peers
 type peersPool struct {
-	sync.Mutex
+	ptmu sync.Mutex // mutex for PeersTable
+	cpmu sync.Mutex // mutex for ConnectedPeers
+	bnmu sync.Mutex // mutex for BannedPeers
 
 	connected int32
 	sync      *Syncer
@@ -50,13 +52,16 @@ type peersPool struct {
 
 	// connected peers table
 	ConnectedPeers map[string]*peerInfo
+
+	// banned peers
+	BannedPeers map[string]struct{}
 }
 
 // Ban closes connection & ban peer
 func (pp *peersPool) Ban(addr string) {
-	pp.Lock()
+	pp.ptmu.Lock()
 	peerInfo, ok := pp.PeersTable[addr]
-	pp.Unlock()
+	pp.ptmu.Unlock()
 
 	if !ok {
 		return
@@ -65,19 +70,25 @@ func (pp *peersPool) Ban(addr string) {
 	// Mark banned & Close connection
 	peerInfo.Status = psBanned
 	peerInfo.Peer.Close()
+
+	// Add to ban list
+	pp.bnmu.Lock()
+	pp.BannedPeers[addr] = struct{}{}
+	pp.bnmu.Unlock()
+
+	// Clear the peers table
+	pp.ptmu.Lock()
+	delete(pp.PeersTable, addr)
+	pp.ptmu.Unlock()
 }
 
 // IsBan returns true if addr is banned
 func (pp *peersPool) IsBan(addr string) bool {
-	pp.Lock()
-	peerInfo, ok := pp.PeersTable[addr]
-	pp.Unlock()
+	pp.bnmu.Lock()
+	defer pp.bnmu.Unlock()
 
-	if ok {
-		return peerInfo.Status == psBanned
-	}
-
-	return false
+	_, ok := pp.BannedPeers[addr]
+	return ok
 }
 
 // AddPeer adds new peer addr to pm
@@ -97,8 +108,8 @@ func (pp *peersPool) Add(addr string) {
 		return
 	}
 
-	pp.Lock()
-	defer pp.Unlock()
+	pp.ptmu.Lock()
+	defer pp.ptmu.Unlock()
 
 	// Don't add if big peer table
 	if len(pp.PeersTable) > maxPeersTableSize {
@@ -127,8 +138,8 @@ func (pp *peersPool) Peers(capabilities consensus.Capabilities) *PeerAddrs {
 	addrs := make([]*net.TCPAddr, 0)
 
 	// Getting peers randomly
-	pp.Lock()
-	defer pp.Unlock()
+	pp.ptmu.Lock()
+	defer pp.ptmu.Unlock()
 
 	for addr, peerInfo := range pp.PeersTable {
 		if peerInfo.Status == psBanned || peerInfo.Status == psFailedConn {
@@ -158,9 +169,9 @@ func (pp *peersPool) Peers(capabilities consensus.Capabilities) *PeerAddrs {
 
 // PeerInfo returns peer structure
 func (pp *peersPool) PeerInfo(addr string) *peerInfo {
-	pp.Lock()
+	pp.ptmu.Lock()
 	peerInfo, ok := pp.PeersTable[addr]
-	pp.Unlock()
+	pp.ptmu.Unlock()
 	if ok {
 		return peerInfo
 	}
@@ -170,14 +181,11 @@ func (pp *peersPool) PeerInfo(addr string) *peerInfo {
 
 // PropagateBlock propagates block to connected peers
 func (pp *peersPool) PropagateBlock(block *consensus.Block) {
-	pp.Lock()
-	defer pp.Unlock()
+	pp.cpmu.Lock()
+	defer pp.cpmu.Unlock()
 
 	for _, pi := range pp.ConnectedPeers {
 		go func(peerInfo *peerInfo) {
-			peerInfo.Lock()
-			defer peerInfo.Unlock()
-
 			// propagate if peer height or totalDiff less than newest block
 			if peerInfo.Height < block.Header.Height || peerInfo.TotalDifficulty < block.Header.TotalDifficulty {
 				if peer := peerInfo.Peer; peer != nil {
@@ -199,9 +207,9 @@ func (pp *peersPool) connectPeer(addr string) error {
 		return errors.New("too big online peers connections")
 	}
 
-	pp.Lock()
+	pp.ptmu.Lock()
 	peerInfo, ok := pp.PeersTable[addr]
-	pp.Unlock()
+	pp.ptmu.Unlock()
 
 	if !ok {
 		return errors.New("peer doesn't exists at peersTable")
@@ -239,9 +247,9 @@ func (pp *peersPool) connectPeer(addr string) error {
 	peerInfo.Capabilities = peerConn.Info.Capabilities
 
 	// update connected peers
-	pp.Lock()
+	pp.cpmu.Lock()
 	pp.ConnectedPeers[addr] = peerInfo
-	pp.Unlock()
+	pp.cpmu.Unlock()
 
 	// And send ping / peers request
 	peerConn.Start()
@@ -251,7 +259,7 @@ func (pp *peersPool) connectPeer(addr string) error {
 	// on disconnect update info
 	go func() {
 		peerConn.WaitForDisconnect()
-		logrus.Info("closed connection")
+		logrus.Infof("closed peer connection (%s)", addr)
 
 		// update peers & connected peers tables
 		peerInfo.Lock()
@@ -259,10 +267,10 @@ func (pp *peersPool) connectPeer(addr string) error {
 		peerInfo.Unlock()
 
 		// clean connected peers
-		pp.Lock()
 		pp.connected--
+		pp.cpmu.Lock()
 		delete(pp.ConnectedPeers, addr)
-		pp.Unlock()
+		pp.cpmu.Unlock()
 
 		<-pp.pool
 	}()
@@ -290,7 +298,9 @@ out:
 	}
 
 	// Close all connections
-	pp.Lock()
+	pp.ptmu.Lock()
+	defer pp.ptmu.Unlock()
+
 	for _, pi := range pp.PeersTable {
 		go func(peerInfo *peerInfo) {
 			peerInfo.Lock()
@@ -300,7 +310,6 @@ out:
 		}(pi)
 
 	}
-	pp.Unlock()
 }
 
 // Stop stops network activity
@@ -310,8 +319,8 @@ func (pp *peersPool) Stop() {
 
 // notConnected returns peer addr from table which not active
 func (pp *peersPool) notConnected() string {
-	pp.Lock()
-	defer pp.Unlock()
+	pp.ptmu.Lock()
+	defer pp.ptmu.Unlock()
 
 	// first, find good peers
 	for addr, peerInfo := range pp.PeersTable {
