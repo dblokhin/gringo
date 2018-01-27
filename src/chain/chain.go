@@ -107,6 +107,10 @@ type Chain struct {
 
 	// Genesis block
 	genesis consensus.Block
+	// current height of chain
+	height uint64
+	// current total difficulty
+	totalDifficulty consensus.Difficulty
 
 	blockHeaders list.List
 }
@@ -117,11 +121,17 @@ func (c *Chain) Genesis() consensus.Block {
 }
 
 func (c *Chain) TotalDifficulty() consensus.Difficulty {
-	return consensus.ZeroDifficulty
+	c.RLock()
+	defer c.RUnlock()
+
+	return c.totalDifficulty
 }
 
 func (c *Chain) Height() uint64 {
-	return 0
+	c.RLock()
+	defer c.RUnlock()
+
+	return c.height
 }
 
 func (c *Chain) GetBlockHeaders(loc consensus.Locator) []consensus.BlockHeader {
