@@ -2,7 +2,7 @@
 // Use of this source code is governed by a GNU GENERAL PUBLIC LICENSE v3
 // license that can be found in the LICENSE file.
 
-package storage
+package chain
 
 import "consensus"
 
@@ -22,8 +22,8 @@ type Storage interface {
 
 // BlockID identify block by Hash or/and Height (if not nill)
 type BlockID struct {
-	// Block hash
+	// Block hash, if nil - use the height
 	Hash *consensus.BlockHash
-	// Block height
+	// Block height, if nil - use the hash
 	Height *uint64
 }

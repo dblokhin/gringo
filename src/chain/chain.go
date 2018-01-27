@@ -45,10 +45,10 @@ var Testnet1 = Chain{
 var Testnet2 = Chain{
 	genesis: consensus.Block{
 		Header: consensus.BlockHeader{
-			Version:         1,
-			Height:          0,
-			Previous:        bytes.Repeat([]byte{0xff}, consensus.BlockHashSize),
-			Timestamp:       time.Date(2017, 11, 16, 20, 0, 0, 0, time.UTC),
+			Version:   1,
+			Height:    0,
+			Previous:  bytes.Repeat([]byte{0xff}, consensus.BlockHashSize),
+			Timestamp: time.Date(2017, 11, 16, 20, 0, 0, 0, time.UTC),
 			//Difficulty:      10,
 			//TotalDifficulty: 10,
 
@@ -105,6 +105,9 @@ var Mainnet = Chain{
 type Chain struct {
 	sync.RWMutex
 
+	// Storage of blockchain
+	storage Storage
+
 	// Genesis block
 	genesis consensus.Block
 	// current height of chain
@@ -120,6 +123,7 @@ func (c *Chain) Genesis() consensus.Block {
 	return c.genesis
 }
 
+// TotalDifficulty returns current total difficulty
 func (c *Chain) TotalDifficulty() consensus.Difficulty {
 	c.RLock()
 	defer c.RUnlock()
@@ -127,6 +131,7 @@ func (c *Chain) TotalDifficulty() consensus.Difficulty {
 	return c.totalDifficulty
 }
 
+// Height returns current height
 func (c *Chain) Height() uint64 {
 	c.RLock()
 	defer c.RUnlock()
@@ -138,8 +143,21 @@ func (c *Chain) GetBlockHeaders(loc consensus.Locator) []consensus.BlockHeader {
 	return nil
 }
 
-func (c *Chain) GetBlock(hash consensus.BlockHash) *consensus.Block {
-	return nil
+// GetBlock returns block by hash, if not found returns nil, nil
+func (c *Chain) GetBlock(hash consensus.BlockHash) (*consensus.Block, error) {
+	if hash == nil {
+		return nil, nil
+	}
+
+	return c.storage.GetBlock(BlockID{
+		Hash:   &hash,
+		Height: nil,
+	})
+}
+
+// GetBlockID returns block by hash, height or both
+func (c *Chain) GetBlockID(b BlockID) (*consensus.Block, error) {
+	return c.storage.GetBlock(b)
 }
 
 func (c *Chain) ProcessHeaders(headers []consensus.BlockHeader) error {
