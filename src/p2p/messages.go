@@ -263,7 +263,7 @@ func (p PeerAddrs) String() string {
 
 // GetBlock message for requesting block by hash
 type GetBlock struct {
-	Hash consensus.BlockHash
+	Hash consensus.Hash
 }
 
 // Bytes implements Message interface

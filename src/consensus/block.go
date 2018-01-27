@@ -18,7 +18,6 @@ import (
 )
 
 // BlockHash is hash of block (32 byte)
-type BlockHash []byte
 type Hash []byte
 
 // SwitchCommitHashSize The size to use for the stored blake2 hash of a switch_commitment
@@ -509,7 +508,7 @@ type BlockHeader struct {
 	// Height of this block since the genesis block (height 0)
 	Height uint64
 	// Hash of the block previous to this in the chain
-	Previous BlockHash
+	Previous Hash
 	// Timestamp at which the block was built
 	Timestamp time.Time
 	// UTXORoot Merklish root of all the commitments in the UTXO set

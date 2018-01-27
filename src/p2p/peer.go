@@ -329,7 +329,7 @@ func (p *Peer) SendPing() {
 }
 
 // SendBlockRequest sends request block by hash
-func (p *Peer) SendBlockRequest(hash consensus.BlockHash) {
+func (p *Peer) SendBlockRequest(hash consensus.Hash) {
 	logrus.Info("sending block request")
 
 	var request GetBlock
@@ -357,7 +357,7 @@ func (p *Peer) SendPeerRequest(capabilities consensus.Capabilities) {
 
 // SendHeaderRequest sends request headers
 func (p *Peer) SendHeaderRequest(locator consensus.Locator) {
-	logrus.Info("sending header request")
+	logrus.Info("sending headers request")
 
 	if len(locator.Hashes) > consensus.MaxLocators {
 		logrus.Debug("locator hashes count: ", len(locator.Hashes))

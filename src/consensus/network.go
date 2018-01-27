@@ -77,7 +77,7 @@ type Protocol interface {
 	SendPing()
 
 	// SendBlock sends a block to our remote peer
-	SendBlock(block Block)
+	SendBlock(block *Block)
 
 	// Relays a transaction to the remote peer
 	SendTransaction(tx Transaction)
@@ -86,7 +86,7 @@ type Protocol interface {
 	SendHeaderRequest(locator Locator)
 
 	// Sends a request for a block from its hash
-	SendBlockRequest(hash BlockHash)
+	SendBlockRequest(hash Hash)
 
 	// Sends a request for some peer addresses
 	SendPeerRequest(capabilities Capabilities)

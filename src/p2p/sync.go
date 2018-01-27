@@ -20,7 +20,7 @@ type Blockchain interface {
 	TotalDifficulty() consensus.Difficulty
 	Height() uint64
 	GetBlockHeaders(loc consensus.Locator) []consensus.BlockHeader
-	GetBlock(hash consensus.BlockHash) *consensus.Block
+	GetBlock(hash consensus.Hash) (*consensus.Block, error)
 
 	// ProcessHeaders processing block headers
 	// Validate blockchain rules
@@ -105,11 +105,13 @@ func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
 
 	switch msg := message.(type) {
 	case *Ping:
+		// MUST be answered
 		// update peer info
 		peerInfo.Lock()
 		peerInfo.TotalDifficulty = msg.TotalDifficulty
 		peerInfo.Height = msg.Height
 		peerInfo.Unlock()
+
 
 		// send answer
 		var resp Pong
@@ -131,6 +133,7 @@ func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
 		peerInfo.Unlock()
 
 	case *GetPeerAddrs:
+		// MUST NOT be answered
 		// Send answer
 		peers := s.Pool.Peers(msg.Capabilities)
 		if peers != nil {
@@ -145,14 +148,14 @@ func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
 		}
 
 	case *GetBlockHeaders:
+		// MUST be answered
 		// send answer
 		headers := s.Chain.GetBlockHeaders(msg.Locator)
 		resp := BlockHeaders {
 			Headers: headers,
 		}
-		if headers != nil {
-			peer.WriteMessage(&resp)
-		}
+
+		peer.WriteMessage(&resp)
 
 	case *BlockHeaders:
 		if err := s.Chain.ProcessHeaders(msg.Headers); err != nil {
@@ -161,9 +164,13 @@ func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
 		}
 
 	case *GetBlock:
-		block := s.Chain.GetBlock(msg.Hash)
-		if block != nil {
-			peer.WriteMessage(block)
+		// MUST NOT be answered
+		if block, err := s.Chain.GetBlock(msg.Hash); err != nil {
+			logrus.Error(err)
+		} else {
+			if block != nil {
+				peer.WriteMessage(block)
+			}
 		}
 
 	case *consensus.Block:
