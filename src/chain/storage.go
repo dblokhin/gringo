@@ -17,9 +17,9 @@ type Storage interface {
 	// Returns full block by hash or height (or both)
 	// if not found return nil
 	GetBlock(id consensus.BlockID) *consensus.Block
+	// returns head of blockchain
+	GetLastBlock() *consensus.Block
 	// Returns list of blocks from id
 	From(id consensus.BlockID, limit int) consensus.BlockList
-	// returns hashes of blockchain
-	BlocksHashes() []consensus.Hash
 }
 

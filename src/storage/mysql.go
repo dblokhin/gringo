@@ -2,7 +2,7 @@
 // Use of this source code is governed by a GNU GENERAL PUBLIC LICENSE v3
 // license that can be found in the LICENSE file.
 
-// mysql storage backend
+// sql storage backend
 // all errors in storage are fatals
 package storage
 
@@ -49,8 +49,8 @@ func (s *SqlStorage) From(id consensus.BlockID, limit int) consensus.BlockList {
 	return nil
 }
 
-// BlocksHashes returns hashes of blockchain
-func (s *SqlStorage) BlocksHashes() []consensus.Hash {
+// GetLastBlock returns head of blockchain
+func (s *SqlStorage) GetLastBlock() *consensus.Block {
 	return nil
 }
 

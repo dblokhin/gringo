@@ -107,37 +107,29 @@ type Chain struct {
 	storage Storage
 
 	// genesis block
-	genesis consensus.Block
+	genesis *consensus.Block
+	// last block of blockchain
+	head *consensus.Block
 	// current height of chain
 	height uint64
 	// current total difficulty
 	totalDifficulty consensus.Difficulty
-
-	// list of blockheaders
-	blockHashChain *list.List
 }
 
-func New(genesis consensus.Block, storage Storage) *Chain {
+func New(genesis *consensus.Block, storage Storage) *Chain {
 	chain := Chain{
 		storage:         storage,
 		genesis:         genesis,
+		head:            genesis,
 		height:          genesis.Header.Height,
 		totalDifficulty: genesis.Header.TotalDifficulty,
-		blockHashChain:  list.New(),
 	}
 
-	// init header list with genesis header
-	chain.blockHashChain.PushFront(genesis.Hash())
 
 	// init state from storage
 	// setting up currents: height, total diff & blockHashChain
-	if blockHashes := storage.BlocksHashes(); blockHashes != nil {
-		for _, hash := range blockHashes {
-			chain.blockHashChain.PushBack(hash)
-		}
-
-		lastBlockHash := blockHashes[len(blockHashes) - 1]
-		lastBlock := storage.GetBlock(consensus.BlockID{Hash: lastBlockHash, Height: nil})
+	if lastBlock := storage.GetLastBlock(); lastBlock != nil {
+		chain.head	= lastBlock
 		chain.totalDifficulty = lastBlock.Header.TotalDifficulty
 		chain.height = lastBlock.Header.Height
 	}
@@ -147,7 +139,7 @@ func New(genesis consensus.Block, storage Storage) *Chain {
 
 // Genesis returns genesis block
 func (c *Chain) Genesis() consensus.Block {
-	return c.genesis
+	return *c.genesis
 }
 
 // TotalDifficulty returns current total difficulty
@@ -172,35 +164,30 @@ func (c *Chain) GetBlockHeaders(loc consensus.Locator) []consensus.BlockHeader {
 	c.RLock()
 	defer c.RUnlock()
 
-	for el := c.blockHashChain.Back(); el != nil; el = el.Prev() {
-		blockHash, ok := el.Value.(consensus.Hash)
-		if !ok {
-			logrus.Fatal("unexpected errors with list of blockHashes")
+	for _, hash := range loc.Hashes {
+
+		// if hash is head of current chain, return empty result
+		if bytes.Compare(hash, c.head.Hash()) == 0 {
+			return result
 		}
 
-		for _, hash := range loc.Hashes {
-			if bytes.Compare(blockHash, hash) == 0 {
-				// Founded, send the next blocks hashes
-				blockHash, ok := el.Next().Value.(consensus.Hash)
-				if !ok {
-					logrus.Fatal("unexpected errors with list of blockHashes")
-				}
+		blockID := consensus.BlockID{
+			Hash: hash,
+			Height: nil,
+		}
 
-				blockID := consensus.BlockID{
-					Hash: blockHash,
-					Height: nil,
-				}
+		// get blocks from
+		blockList := c.storage.From(blockID, consensus.MaxBlockHeaders + 1)
+		if len(blockList) > 0 {
+			// pass first block
+			blockList = blockList[1:]
 
-				// get blocks from
-				blockList := c.storage.From(blockID, consensus.MaxBlockHeaders)
-
-				// collect headers
-				for _, block := range blockList {
-					result = append(result, block.Header)
-				}
-
-				return result
+			// collect headers
+			for _, block := range blockList {
+				result = append(result, block.Header)
 			}
+
+			return result
 		}
 	}
 
@@ -229,6 +216,22 @@ func (c *Chain) ProcessHeaders(headers []consensus.BlockHeader) error {
 }
 
 func (c *Chain) ProcessBlock(block *consensus.Block) error {
-	// befora locking block chain on change MUST lock blockHashesChain chain
+	// before locking storage on change MUST lock the Chain
+	// Checking existing block
+	c.Lock()
+	defer c.Unlock()
+
+	if bytes.Compare(c.head.Hash(), block.Hash()) == 0 {
+		// the block is exists
+		return nil
+	}
+
+	// verify block
+
 	return nil
+}
+
+// Head returns lastest block in blockchain
+func (c *Chain) Head() consensus.Block {
+	return *c.head
 }
