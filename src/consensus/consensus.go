@@ -4,6 +4,8 @@
 
 package consensus
 
+import "time"
+
 // Consensus rule that everything is sorted in lexicographical order on the wire.
 
 // MAXTarget The target is the 32-bytes hash block hashes must be lower than.
@@ -45,7 +47,7 @@ const (
 	// that we may reduce this value in the future as we get more data on mining
 	// with Cuckoo Cycle, networks improve and block propagation is optimized
 	// (adjusting the reward accordingly).
-	BlockTimeSec uint64 = 60
+	BlockTimeSec time.Duration = 60
 
 	// ProofSize Cuckoo-cycle proof size (cycle length)
 	ProofSize uint32 = 42
@@ -63,6 +65,7 @@ const (
 	// behind the value is the longest bitcoin fork was about 30 blocks, so 5h. We
 	// add an order of magnitude to be safe and round to 48h of blocks to make it
 	// easier to reason about.
+	// TODO: check that on bug with size BlockTimeSec
 	CutThroughHorizon uint32 = 48 * 3600 / uint32(BlockTimeSec)
 
 	// Weight of an input when counted against the max block weigth capacity
@@ -81,21 +84,18 @@ const (
 	// little less than 6 months.
 	HardForkInterval uint64 = 250000
 
-	// The minimum mining difficulty we'll allow
-	MinimumDifficulty uint64 = 1
-
 	// Time window in blocks to calculate block time median
-	MedianTimeWindow uint64 = 11
+	MedianTimeWindow int = 11
 
 	// Number of blocks used to calculate difficulty adjustments
-	DifficultyAdjustWindow uint64 = 23
+	DifficultyAdjustWindow int = 23
 
 	// Average time span of the difficulty adjustment window
-	BlockTimeWindow uint64 = DifficultyAdjustWindow * BlockTimeSec
+	BlockTimeWindow time.Duration = time.Duration(DifficultyAdjustWindow) * BlockTimeSec
 
 	// Maximum size time window used for difficulty adjustments
-	UpperTimeBound uint64 = BlockTimeWindow * 4 / 3
+	UpperTimeBound time.Duration = BlockTimeWindow * 4 / 3
 
 	// Minimum size time window used for difficulty adjustments
-	LowerTimeBound uint64 = BlockTimeWindow * 5 / 6
+	LowerTimeBound time.Duration = BlockTimeWindow * 5 / 6
 )
