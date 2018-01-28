@@ -11,6 +11,7 @@ import (
 	"bytes"
 	"time"
 	"github.com/sirupsen/logrus"
+	"errors"
 )
 
 // Testnet1 genesis block
@@ -234,4 +235,28 @@ func (c *Chain) ProcessBlock(block *consensus.Block) error {
 // Head returns lastest block in blockchain
 func (c *Chain) Head() consensus.Block {
 	return *c.head
+}
+
+// Validate returns nil if chain successfully passed consensus rules
+func (c *Chain) Validate() error {
+	c.Lock()
+	defer c.Unlock()
+
+	block := c.head
+
+	// go from head to genesis
+	for bytes.Compare(block.Header.Previous, c.genesis.Hash()) != 0 {
+		err := block.Validate()
+		if err == nil {
+			return err
+		}
+
+		if block = c.GetBlock(block.Header.Previous); block == nil {
+			return errors.New("invalid previous hash. blockchain integrity is broken")
+		}
+
+		// TODO: check other rules, may be checking block.Height?
+	}
+
+	return nil
 }

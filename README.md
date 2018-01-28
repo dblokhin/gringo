@@ -1,5 +1,5 @@
 # GRINGO
-Golang (Go) implementation of full Grin node (implementation of the MimbleWimble protocol) https://github.com/mimblewimble/grin
+Golang (Go) implementation of full Grin node (the MimbleWimble protocol)
 
 # The goal
 Just for fun
