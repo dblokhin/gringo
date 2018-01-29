@@ -220,6 +220,7 @@ func (c *Chain) ProcessBlock(block *consensus.Block) error {
 	// Checking existing block
 	c.Lock()
 	defer c.Unlock()
+	logrus.Infof("processing block (height: %d, totalDiff: %d)", block.Header.Height, block.Header.TotalDifficulty)
 
 	// quick check is it current tip
 	if bytes.Compare(c.head.Hash(), block.Hash()) == 0 {
@@ -232,6 +233,7 @@ func (c *Chain) ProcessBlock(block *consensus.Block) error {
 		return err
 	}
 
+	logrus.Info("getting the previous blocks")
 	// Get the previous block
 	prevHeight := block.Header.Height - 1
 	prevBlockID := consensus.BlockID{
@@ -240,12 +242,14 @@ func (c *Chain) ProcessBlock(block *consensus.Block) error {
 	}
 	prevBlock := c.storage.GetBlock(prevBlockID)
 	if prevBlock == nil {
+		logrus.Info("no previous blocks")
 		// No previous block at the current chain
 		// It may be unknown fork-chain
 		// TODO: process that
 		return nil
 	}
 
+	logrus.Info("validating with the previous blocks")
 	// Previous block exists
 
 	// Checks with the previous block

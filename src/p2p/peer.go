@@ -330,12 +330,11 @@ func (p *Peer) SendPing() {
 
 // SendBlockRequest sends request block by hash
 func (p *Peer) SendBlockRequest(hash consensus.Hash) {
-	logrus.Info("sending block request")
+	logrus.Infof("sending block request (%s)", hex.EncodeToString(hash[:6]))
 
 	var request GetBlock
 	request.Hash = hash
 
-	logrus.Debug("block hash: ", hash)
 	p.WriteMessage(&request)
 }
 

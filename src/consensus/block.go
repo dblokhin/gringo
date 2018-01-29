@@ -177,6 +177,7 @@ func (b *Block) Hash() Hash {
 
 // Validate returns nil if block successfully passed BLOCK-SCOPE consensus rules
 func (b *Block) Validate() error {
+	logrus.Info("block scope validate")
 	// validate header
 	if err := b.Header.Validate(); err != nil {
 		return err
@@ -711,6 +712,7 @@ func (b *BlockHeader) Read(r io.Reader) error {
 
 // Validate returns nil if header successfully passed consensus rules
 func (b *BlockHeader) Validate() error {
+	logrus.Info("block header validate")
 
 	// Check block header version
 	if !ValidateBlockVersion(b.Height, b.Version) {

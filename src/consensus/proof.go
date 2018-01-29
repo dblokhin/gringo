@@ -23,6 +23,7 @@ type Proof struct  {
 
 // Validate validates the pow
 func (p *Proof) Validate() error {
+	logrus.Info("block POW validate")
 	return nil
 }
 
