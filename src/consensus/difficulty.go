@@ -7,6 +7,7 @@ package consensus
 import (
 	"time"
 	"sort"
+	"encoding/binary"
 )
 
 const (
@@ -22,20 +23,15 @@ type Difficulty uint64
 func (d Difficulty) FromNum(num uint64) Difficulty {
 	return Difficulty(num)
 }
+// FromHash computes the difficulty from a hash. Divides the maximum target by the
+// provided hash.
+func (d Difficulty) FromHash(hash Hash) Difficulty {
+	maxTarget := binary.BigEndian.Uint64(MAXTarget)
 
-func (d Difficulty) FromHash() Difficulty {
-	/*
-	pub fn from_hash(h: &Hash) -> Difficulty {
-		let max_target = BigEndian::read_u64(&MAX_TARGET);
-		// Use the first 64 bits of the given hash
-		let mut in_vec = h.to_vec();
-		in_vec.truncate(8);
-		let num = BigEndian::read_u64(&in_vec);
-		Difficulty { num: max_target / num }
-	}
+	// Use the first 64 bits of the given hash
+	num := binary.BigEndian.Uint64(hash[:8])
 
-	*/
-	return Difficulty(0)
+	return Difficulty(maxTarget / num)
 }
 
 func (d Difficulty) IntoNum() uint64 {
