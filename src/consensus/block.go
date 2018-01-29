@@ -162,19 +162,6 @@ func (b *Block) Read(r io.Reader) error {
 		}
 	}
 
-	// Check sorted input, output requiring consensus rule!
-	if !sort.IsSorted(b.Inputs) {
-		return errors.New("consensus error: inputs are not sorted")
-	}
-
-	if !sort.IsSorted(b.Outputs) {
-		return errors.New("consensus error: outputs are not sorted")
-	}
-
-	if !sort.IsSorted(b.Kernels) {
-		return errors.New("consensus error: kernels are not sorted")
-	}
-
 	return nil
 }
 
@@ -232,6 +219,17 @@ func (b *Block) Validate() error {
 	}
 
 	// Check sorted inputs, outputs, kernels
+	if !sort.IsSorted(b.Inputs) {
+		return errors.New("block inputs are not sorted")
+	}
+
+	if !sort.IsSorted(b.Outputs) {
+		return errors.New("block outputs are not sorted")
+	}
+
+	if !sort.IsSorted(b.Kernels) {
+		return errors.New("block kernels are not sorted")
+	}
 
 	// Check the roots
 	// TODO: do that
@@ -254,20 +252,7 @@ func (m InputList) Len() int {
 }
 
 func (m InputList) Less(i, j int) bool {
-
-	if len(m[i].Commit) != len(m[j].Commit) {
-		return len(m[i].Commit) < len(m[j].Commit)
-	}
-
-	l := len(m[i].Commit)
-
-	for k := 0; k < l; k++ {
-		if m[i].Commit[k] != m[j].Commit[k] {
-			return m[i].Commit[k] < m[j].Commit[k]
-		}
-	}
-
-	return false
+	return bytes.Compare(m[i].Commit, m[j].Commit) < 0
 }
 
 func (m InputList) Swap(i, j int) {
@@ -407,19 +392,7 @@ func (m OutputList) Less(i, j int) bool {
 	m_i := m[i].Bytes()
 	m_j := m[j].Bytes()
 
-	if len(m_i) != len(m_j) {
-		return len(m_i) < len(m_j)
-	}
-
-	l := len(m_i)
-
-	for k := 0; k < l; k++ {
-		if m_i[k] != m_j[k] {
-			return m_i[k] < m_j[k]
-		}
-	}
-
-	return false
+	return bytes.Compare(m_i, m_j) < 0
 }
 
 func (m OutputList) Swap(i, j int) {
@@ -553,19 +526,7 @@ func (m TxKernelList) Less(i, j int) bool {
 	m_i := m[i].Bytes()
 	m_j := m[j].Bytes()
 
-	if len(m_i) != len(m_j) {
-		return len(m_i) < len(m_j)
-	}
-
-	l := len(m_i)
-
-	for k := 0; k < l; k++ {
-		if m_i[k] != m_j[k] {
-			return m_i[k] < m_j[k]
-		}
-	}
-
-	return false
+	return bytes.Compare(m_i, m_j) < 0
 }
 
 func (m TxKernelList) Swap(i, j int) {
