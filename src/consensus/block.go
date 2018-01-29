@@ -188,6 +188,59 @@ func (b *Block) Hash() Hash {
 	return b.Header.Hash()
 }
 
+// Validate returns nil if block successfully passed BLOCK-SCOPE consensus rules
+func (b *Block) Validate() error {
+	// validate header
+	if err := b.Header.Validate(); err != nil {
+		return err
+	}
+
+	// Check that consensus rule MaxBlockCoinbaseOutputs & MaxBlockCoinbaseKernels
+	if len(b.Outputs) == 0 || len(b.Kernels) == 0 {
+		return errors.New("invalid nocoinbase block")
+	}
+
+	cOutputs, cKernels := 0, 0
+	for _, output := range b.Outputs {
+		if output.Features & CoinbaseOutput == CoinbaseOutput {
+			cOutputs++
+
+			if cOutputs > MaxBlockCoinbaseOutputs {
+				return errors.New("invalid block with few coinbase outputs")
+			}
+
+			// Validate output
+			if err := output.Validate(); err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, kernel := range b.Kernels {
+		if kernel.Features & CoinbaseKernel == CoinbaseKernel {
+			cKernels++
+
+			if cKernels > MaxBlockCoinbaseKernels {
+				return errors.New("invalid block with few coinbase kernels")
+			}
+
+			// Validate kernel
+			if err := kernel.Validate(); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Check sorted inputs, outputs, kernels
+
+	// Check the roots
+	// TODO: do that
+
+
+
+	return nil
+}
+
 type BlockList []Block
 
 type Input struct {
@@ -333,6 +386,11 @@ func (o *Output) Read(r io.Reader) error {
 	return nil
 }
 
+// Validate returns nil if output successfully passed consensus rules
+func (o *Output) Validate() error {
+	return nil
+}
+
 // String implements String() interface
 func (p Output) String() string {
 	return fmt.Sprintf("%#v", p)
@@ -474,6 +532,11 @@ func (k *TxKernel) Read(r io.Reader) error {
 	return nil
 }
 
+// Validate returns nil if kernel successfully passed consensus rules
+func (o *TxKernel) Validate() error {
+	return nil
+}
+
 // String implements String() interface
 func (p TxKernel) String() string {
 	return fmt.Sprintf("%#v", p)
@@ -606,20 +669,7 @@ func (b *BlockHeader) bytesWithoutPOW() []byte {
 }
 
 func (b *BlockHeader) bytesPOW() []byte {
-	buff := new(bytes.Buffer)
-
-	// Write POW
-	if uint32(b.POW.ProofSize) != ProofSize || uint32(len(b.POW.Nonces)) != ProofSize {
-		logrus.Fatal(errors.New("invalid proof len"))
-	}
-
-	for i := 0; i < int(ProofSize); i++ {
-		if err := binary.Write(buff, binary.BigEndian, b.POW.Nonces[i]); err != nil {
-			logrus.Fatal(err)
-		}
-	}
-
-	return buff.Bytes()
+	return b.POW.Bytes()
 }
 
 // Bytes implements p2p Message interface
@@ -696,6 +746,41 @@ func (b *BlockHeader) Read(r io.Reader) error {
 
 	b.POW = NewProof(pow)
 	return nil
+}
+
+// Validate returns nil if header successfully passed consensus rules
+func (b *BlockHeader) Validate() error {
+
+	// Check block header version
+	if !ValidateBlockVersion(b.Height, b.Version) {
+		return fmt.Errorf("invalid block version %d on height %d, maybe update Gringo?", b.Version, b.Height)
+	}
+
+	// refuse blocks more than 12 blocks intervals in future (as in bitcoin)
+	if b.Timestamp.Sub(time.Now().UTC()) > time.Second * 12 * BlockTimeSec {
+		return fmt.Errorf("invalid block time (%s)", b.Timestamp)
+	}
+
+	// Check POW
+	if err := b.POW.Validate(); err != nil {
+		return err
+	}
+
+	// Check Difficulty
+	if b.Difficulty < MinimumDifficulty {
+		return errors.New("block difficulty is less than minimal")
+	}
+
+	return nil
+}
+
+// ValidateBlockVersion helper for validation block header version
+func ValidateBlockVersion(height uint64, version uint16) bool {
+	if height <= HardForkInterval && version == 1 {
+		return true
+	}
+
+	return false
 }
 
 // String implements String() interface

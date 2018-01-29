@@ -36,12 +36,12 @@ const (
 	// MaxBlockCoinbaseOutputs number of max coinbase outputs in a valid block.
 	// This is to prevent a miner generating an excessively large "compact block".
 	// But we do techincally support blocks with multiple coinbase outputs/kernels.
-	MaxBlockCoinbaseOutputs uint64 = 1
+	MaxBlockCoinbaseOutputs int = 1
 
 	// MaxBlockCoinbaseKernels number of max coinbase kernels in a valid block.
 	// This is to prevent a miner generating an excessively large "compact block".
 	// But we do techincally support blocks with multiple coinbase outputs/kernels.
-	MaxBlockCoinbaseKernels uint64 = 1
+	MaxBlockCoinbaseKernels int = 1
 
 	// BlockTimeSec Block interval, in seconds, the network will tune its next_target for. Note
 	// that we may reduce this value in the future as we get more data on mining

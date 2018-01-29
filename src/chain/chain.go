@@ -7,7 +7,6 @@ package chain
 import (
 	"consensus"
 	"sync"
-	"container/list"
 	"bytes"
 	"time"
 	"github.com/sirupsen/logrus"
@@ -222,12 +221,61 @@ func (c *Chain) ProcessBlock(block *consensus.Block) error {
 	c.Lock()
 	defer c.Unlock()
 
+	// quick check is it current tip
 	if bytes.Compare(c.head.Hash(), block.Hash()) == 0 {
 		// the block is exists
 		return nil
 	}
 
-	// verify block
+	// verify block by consensus rules
+	if err := block.Validate(); err != nil {
+		return err
+	}
+
+	// Get the previous block
+	prevHeight := block.Header.Height - 1
+	prevBlockID := consensus.BlockID{
+		Hash: block.Header.Previous,
+		Height: &prevHeight,
+	}
+	prevBlock := c.storage.GetBlock(prevBlockID)
+	if prevBlock == nil {
+		// No previous block at the current chain
+		// It may be unknown fork-chain
+		// TODO: process that
+		return nil
+	}
+
+	// Previous block exists
+
+	// Checks with the previous block
+	// - previous Timestamp MUST BE less block.Header.Timestamp
+	if !block.Header.Timestamp.After(prevBlock.Header.Timestamp) {
+		return errors.New("invalid block time")
+	}
+	// - block.TotalDiff MUST BE == previous.TotalDiff + previous.POW.ToDifficulty()
+	if block.Header.TotalDifficulty != prevBlock.Header.TotalDifficulty + prevBlock.Header.POW.ToDifficulty() {
+		return errors.New("wrong block total difficulty")
+	}
+	// - check that the difficulty is not less than that calculated by the
+	//    	difficulty average based on the previous blocks
+	limit := int(consensus.DifficultyAdjustWindow + consensus.MedianTimeWindow)
+	fromHeight := uint64(0)
+	if block.Header.Height > uint64(limit) {
+		fromHeight = block.Header.Height - uint64(limit)
+	}
+
+	blockID := consensus.BlockID{
+		Hash: nil,
+		Height: &fromHeight,
+	}
+
+	diffAvg := consensus.NextDifficulty(c.storage.From(blockID, limit))
+	if block.Header.Difficulty < diffAvg {
+		return errors.New("difficulty is too low")
+	}
+
+	// TODO: applying block
 
 	return nil
 }
@@ -245,6 +293,7 @@ func (c *Chain) Validate() error {
 	block := c.head
 
 	// go from head to genesis
+	// TODO: MUST check all consensus rules
 	for bytes.Compare(block.Header.Previous, c.genesis.Hash()) != 0 {
 		err := block.Validate()
 		if err == nil {
