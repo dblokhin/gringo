@@ -725,7 +725,13 @@ func (b *BlockHeader) Validate() error {
 	}
 
 	// Check POW
-	if err := b.POW.Validate(); err != nil {
+	// make sure the pow hash shows a difficulty at least as large as the target
+	// difficulty
+	if b.Difficulty > b.POW.ToDifficulty() {
+		return errors.New("difficulty is too big")
+	}
+
+	if err := b.POW.Validate(b, DefaultSizeShift); err != nil {
 		return err
 	}
 

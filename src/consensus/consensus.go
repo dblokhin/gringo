@@ -52,12 +52,12 @@ const (
 	// ProofSize Cuckoo-cycle proof size (cycle length)
 	ProofSize uint32 = 42
 
-	// DefaultSizeshift Default Cuckoo Cycle size shift used for mining and validating.
-	DefaultSizeshift uint8 = 30
+	// DefaultSizeShift Default Cuckoo Cycle size shift used for mining and validating.
+	DefaultSizeShift uint32 = 30
 
 	// Easiness Default Cuckoo Cycle easiness, high enough to have good likeliness to find
 	// a solution.
-	Easiness uint32 = 50
+	Easiness uint64 = 50
 
 	// Default number of blocks in the past when cross-block cut-through will start
 	// happening. Needs to be long enough to not overlap with a long reorg.

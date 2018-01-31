@@ -10,6 +10,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"golang.org/x/crypto/blake2b"
+	"cuckoo"
 )
 
 // RangeProof of work
@@ -22,9 +23,15 @@ type Proof struct  {
 }
 
 // Validate validates the pow
-func (p *Proof) Validate() error {
+func (p *Proof) Validate(bh *BlockHeader, cuckooSize uint32) error {
 	logrus.Info("block POW validate")
-	return nil
+
+	cuckoo := cuckoo.New(bh.Hash(), cuckooSize)
+	if cuckoo.Verify(bh.POW.Nonces, Easiness) {
+		return nil
+	}
+
+	return errors.New("invalid pow verify")
 }
 
 // ToDifficulty converts the proof to a proof-of-work Target so they can be compared.
