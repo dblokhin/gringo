@@ -17,9 +17,6 @@ import (
 	"sort"
 )
 
-// BlockHash is hash of block (32 byte)
-type Hash []byte
-
 // SwitchCommitHashSize The size to use for the stored blake2 hash of a switch_commitment
 const SwitchCommitHashSize = 20
 
@@ -177,6 +174,16 @@ func (b *Block) Hash() Hash {
 
 // Validate returns nil if block successfully passed BLOCK-SCOPE consensus rules
 func (b *Block) Validate() error {
+	/*
+	TODO: implement it:
+
+	verify_weight()
+	verify_sorted()
+	verify_coinbase()
+	verify_kernels()
+
+	*/
+
 	logrus.Info("block scope validate")
 	// validate header
 	if err := b.Header.Validate(); err != nil {
@@ -240,12 +247,150 @@ func (b *Block) Validate() error {
 	return nil
 }
 
+// CompactBlock compact version of grin block
+// Compact representation of a full block.
+// Each input/output/kernel is represented as a short_id.
+// A node is reasonably likely to have already seen all tx data (tx broadcast before block)
+// and can go request missing tx data from peers if necessary to hydrate a compact block
+// into a full block.
+type CompactBlock struct {
+	// The header with metadata and commitments to the rest of the data
+	Header BlockHeader
+	// List of full outputs - specifically the coinbase output(s)
+	Outputs OutputList
+	// List of full kernels - specifically the coinbase kernel(s)
+	Kernels TxKernelList
+	// List of transaction kernels, excluding those in the full list (short_ids)
+	KernelIDs ShortIDList
+}
+
+// Bytes implements p2p Message interface
+func (b *CompactBlock) Bytes() []byte {
+	buff := new(bytes.Buffer)
+	if _, err := buff.Write(b.Header.Bytes()); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if err := binary.Write(buff, binary.BigEndian, uint8(len(b.Outputs))); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if err := binary.Write(buff, binary.BigEndian, uint8(len(b.Kernels))); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if err := binary.Write(buff, binary.BigEndian, uint64(len(b.KernelIDs))); err != nil {
+		logrus.Fatal(err)
+	}
+
+	// consensus rule: input, output, kernels MUST BE sorted!
+	sort.Sort(b.Outputs)
+	sort.Sort(b.Kernels)
+	sort.Sort(b.KernelIDs)
+
+	// Write outputs
+	for _, output := range b.Outputs {
+		if _, err := buff.Write(output.Bytes()); err != nil {
+			logrus.Fatal(err)
+		}
+	}
+
+	// Write kernels
+	for _, txKernel := range b.Kernels {
+		if _, err := buff.Write(txKernel.Bytes()); err != nil {
+			logrus.Fatal(err)
+		}
+	}
+
+	// Write kernels ids
+	for _, id := range b.KernelIDs {
+		if _, err := buff.Write(id); err != nil {
+			logrus.Fatal(err)
+		}
+	}
+
+	return buff.Bytes()
+}
+
+// Type implements p2p Message interface
+func (b *CompactBlock) Type() uint8 {
+	return MsgTypeCompactBlock
+}
+
+// Read implements p2p Message interface
+func (b *CompactBlock) Read(r io.Reader) error {
+	// Read block header
+	if err := b.Header.Read(r); err != nil {
+		return err
+	}
+
+	// Read counts
+	var (
+		outputs, kernels uint8
+		kernelIDs uint64
+	)
+
+	if err := binary.Read(r, binary.BigEndian, &outputs); err != nil {
+		return err
+	}
+
+	if err := binary.Read(r, binary.BigEndian, &kernels); err != nil {
+		return err
+	}
+
+	if err := binary.Read(r, binary.BigEndian, &kernelIDs); err != nil {
+		return err
+	}
+
+	// Read outputs
+	b.Outputs = make(OutputList, outputs)
+	for i := uint8(0); i < outputs; i++ {
+		if err := b.Outputs[i].Read(r); err != nil {
+			return err
+		}
+	}
+
+	// Read kernels
+	b.Kernels = make(TxKernelList, kernels)
+	for i := uint8(0); i < kernels; i++ {
+
+		if err := b.Kernels[i].Read(r); err != nil {
+			return err
+		}
+	}
+
+	// Read kernels ids
+	b.KernelIDs = make(ShortIDList, kernelIDs)
+	for i := uint64(0); i < kernelIDs; i++ {
+
+		shortID := make(ShortID, ShortIDSize)
+		if _, err := io.ReadFull(r, shortID); err != nil {
+			return err
+		}
+
+		b.KernelIDs[i] = shortID
+	}
+
+	return nil
+}
+
+// String implements String() interface
+func (p CompactBlock) String() string {
+	return fmt.Sprintf("%#v", p)
+}
+
+// Hash returns hash of block
+func (b *CompactBlock) Hash() Hash {
+	return b.Header.Hash()
+}
+
 type BlockList []Block
 
 type Input struct {
 	Commit secp256k1zkp.Commitment
 }
 
+// InputList sortable list of inputs
 type InputList []Input
 
 func (m InputList) Len() int {
@@ -382,6 +527,7 @@ func (p Output) String() string {
 	return fmt.Sprintf("%#v", p)
 }
 
+// OutputList sortable list of outputs
 type OutputList []Output
 
 func (m OutputList) Len() int {
@@ -516,6 +662,7 @@ func (p TxKernel) String() string {
 	return fmt.Sprintf("%#v", p)
 }
 
+// TxKernelList sortable list of kernels
 type TxKernelList []TxKernel
 
 func (m TxKernelList) Len() int {
@@ -724,20 +871,20 @@ func (b *BlockHeader) Validate() error {
 		return fmt.Errorf("invalid block time (%s)", b.Timestamp)
 	}
 
+	// Check Difficulty
+	if b.Difficulty < MinimumDifficulty {
+		return errors.New("block difficulty is less than minimal")
+	}
+
 	// Check POW
 	// make sure the pow hash shows a difficulty at least as large as the target
 	// difficulty
-	if b.Difficulty > b.POW.ToDifficulty() {
-		return errors.New("difficulty is too big")
+	if b.POW.ToDifficulty() < b.Difficulty {
+		return errors.New("difficulty is invalid")
 	}
 
 	if err := b.POW.Validate(b, DefaultSizeShift); err != nil {
 		return err
-	}
-
-	// Check Difficulty
-	if b.Difficulty < MinimumDifficulty {
-		return errors.New("block difficulty is less than minimal")
 	}
 
 	return nil

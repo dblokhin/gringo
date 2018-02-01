@@ -33,6 +33,8 @@ const (
 	MsgTypeHeaders
 	MsgTypeGetBlock
 	MsgTypeBlock
+	MsgTypeGetCompactBlock
+	MsgTypeCompactBlock
 	MsgTypeTransaction
 )
 

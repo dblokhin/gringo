@@ -16,7 +16,7 @@ func New(key []byte, sizeShift uint32) *Cuckoo {
 	size := uint64(1) << sizeShift
 
 	k0 := binary.LittleEndian.Uint64(key[:8])
-	k1 := binary.LittleEndian.Uint64(key[7:16])
+	k1 := binary.LittleEndian.Uint64(key[8:16])
 
 	v := make([]uint64, 4)
 	v[0] = k0 ^ 0x736f6d6570736575
