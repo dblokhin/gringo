@@ -87,15 +87,18 @@ const (
 	// Time window in blocks to calculate block time median
 	MedianTimeWindow int = 11
 
+	// Index at half the desired median
+	MedianTimeIndex	= MedianTimeWindow / 2
+
 	// Number of blocks used to calculate difficulty adjustments
-	DifficultyAdjustWindow int = 23
+	DifficultyAdjustWindow int = 60
 
 	// Average time span of the difficulty adjustment window
 	BlockTimeWindow time.Duration = time.Duration(DifficultyAdjustWindow) * BlockTimeSec
 
 	// Maximum size time window used for difficulty adjustments
-	UpperTimeBound time.Duration = BlockTimeWindow * 4 / 3
+	UpperTimeBound time.Duration = BlockTimeWindow * 2
 
 	// Minimum size time window used for difficulty adjustments
-	LowerTimeBound time.Duration = BlockTimeWindow * 5 / 6
+	LowerTimeBound time.Duration = BlockTimeWindow * 2
 )
