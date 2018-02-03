@@ -268,6 +268,21 @@ out:
 			logrus.Info("block hash: ", hex.EncodeToString(msg.Header.Hash()))
 			p.sync.ProcessMessage(p, &msg)
 
+		case consensus.MsgTypeGetCompactBlock:
+			logrus.Infof("receiving compact block request (%s)", p.conn.RemoteAddr().String())
+			// TODO: impl it
+
+		case consensus.MsgTypeCompactBlock:
+			logrus.Infof("receiving compact block (%s)", p.conn.RemoteAddr().String())
+
+			var msg consensus.CompactBlock
+			if exitError = msg.Read(rl); exitError != nil {
+				break out
+			}
+
+			// TODO: process compact block
+			logrus.Info("compact block hash: ", hex.EncodeToString(msg.Header.Hash()))
+
 		case consensus.MsgTypeTransaction:
 			logrus.Infof("receiving transaction (%s)", p.conn.RemoteAddr().String())
 
