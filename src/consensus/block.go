@@ -174,6 +174,7 @@ func (b *Block) Hash() Hash {
 
 // Validate returns nil if block successfully passed BLOCK-SCOPE consensus rules
 func (b *Block) Validate() error {
+	logrus.Info("block scope validate")
 	/*
 	TODO: implement it:
 
@@ -184,7 +185,6 @@ func (b *Block) Validate() error {
 
 	*/
 
-	logrus.Info("block scope validate")
 	// validate header
 	if err := b.Header.Validate(); err != nil {
 		return err
@@ -195,12 +195,30 @@ func (b *Block) Validate() error {
 		return errors.New("invalid nocoinbase block")
 	}
 
-	cOutputs, cKernels := 0, 0
+	// Check sorted inputs, outputs, kernels
+	if err := b.verifySorted(); err != nil {
+		return err
+	}
+
+	if err := b.verifyCoinbase(); err != nil {
+		return err
+	}
+
+	if err := b.verifyKernels(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b *Block) verifyCoinbase() error {
+	coinbase := 0
+
 	for _, output := range b.Outputs {
 		if output.Features & CoinbaseOutput == CoinbaseOutput {
-			cOutputs++
+			coinbase++
 
-			if cOutputs > MaxBlockCoinbaseOutputs {
+			if coinbase > MaxBlockCoinbaseOutputs {
 				return errors.New("invalid block with few coinbase outputs")
 			}
 
@@ -211,11 +229,20 @@ func (b *Block) Validate() error {
 		}
 	}
 
+	// Check the roots
+	// TODO: do that
+
+	return nil
+}
+
+func (b *Block) verifyKernels() error {
+	coinbase := 0
+
 	for _, kernel := range b.Kernels {
 		if kernel.Features & CoinbaseKernel == CoinbaseKernel {
-			cKernels++
+			coinbase++
 
-			if cKernels > MaxBlockCoinbaseKernels {
+			if coinbase > MaxBlockCoinbaseKernels {
 				return errors.New("invalid block with few coinbase kernels")
 			}
 
@@ -226,7 +253,14 @@ func (b *Block) Validate() error {
 		}
 	}
 
-	// Check sorted inputs, outputs, kernels
+	// Check the roots
+	// TODO: do that
+
+	return nil
+}
+
+// verifySorted checks sorted inputs, outputs, kernels
+func (b *Block) verifySorted() error {
 	if !sort.IsSorted(b.Inputs) {
 		return errors.New("block inputs are not sorted")
 	}
@@ -238,11 +272,6 @@ func (b *Block) Validate() error {
 	if !sort.IsSorted(b.Kernels) {
 		return errors.New("block kernels are not sorted")
 	}
-
-	// Check the roots
-	// TODO: do that
-
-
 
 	return nil
 }
