@@ -50,7 +50,7 @@ const (
 	BlockTimeSec time.Duration = 60
 
 	// ProofSize Cuckoo-cycle proof size (cycle length)
-	ProofSize uint32 = 42
+	ProofSize int = 42
 
 	// DefaultSizeShift Default Cuckoo Cycle size shift used for mining and validating.
 	DefaultSizeShift uint32 = 30

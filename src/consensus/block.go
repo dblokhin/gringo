@@ -876,7 +876,7 @@ func (b *BlockHeader) Read(r io.Reader) error {
 
 	// Read POW
 	pow := make([]uint32, ProofSize)
-	for i := 0; i < int(ProofSize); i++ {
+	for i := 0; i < ProofSize; i++ {
 		if err := binary.Read(r, binary.BigEndian, &pow[i]); err != nil {
 			return err
 		}

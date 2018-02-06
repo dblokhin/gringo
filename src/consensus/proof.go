@@ -17,21 +17,26 @@ import (
 type Proof struct  {
 	// The nonces
  	Nonces []uint32
-
-	// The proof size
- 	ProofSize uint
 }
+
+var (
+	errInvalidPow = errors.New("invalid pow verify")
+)
 
 // Validate validates the pow
 func (p *Proof) Validate(bh *BlockHeader, cuckooSize uint32) error {
 	logrus.Info("block POW validate")
+
+	if len(bh.POW.Nonces) != ProofSize {
+		return errInvalidPow
+	}
 
 	cuckoo := cuckoo.New(bh.Hash(), cuckooSize)
 	if cuckoo.Verify(bh.POW.Nonces, Easiness) {
 		return nil
 	}
 
-	return errors.New("invalid pow verify")
+	return errInvalidPow
 }
 
 // ToDifficulty converts the proof to a proof-of-work Target so they can be compared.
@@ -51,7 +56,7 @@ func (p *Proof) Bytes() []byte {
 	buff := new(bytes.Buffer)
 
 	// Write POW
-	if uint32(p.ProofSize) != ProofSize || uint32(len(p.Nonces)) != ProofSize {
+	if len(p.Nonces) != ProofSize {
 		logrus.Fatal(errors.New("invalid proof len"))
 	}
 
@@ -67,6 +72,5 @@ func (p *Proof) Bytes() []byte {
 func NewProof(nonces []uint32) Proof {
 	return Proof {
 		Nonces: nonces,
-		ProofSize: uint(len(nonces)), // TODO: it should be == ProofSize ?
 	}
 }
