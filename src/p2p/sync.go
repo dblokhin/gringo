@@ -174,7 +174,8 @@ func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
 		// if block on the top of chain than propagate it
 		// to others nodes with less TotalDifficulty
 		if err := s.Chain.ProcessBlock(msg); err != nil {
-			// ban peer ?
+			logrus.Info(err)
+			// TODO: maybe smarter ban peer ?
 			s.Pool.Ban(peer.conn.RemoteAddr().String())
 		}
 

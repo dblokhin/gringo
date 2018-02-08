@@ -24,15 +24,11 @@ var (
 )
 
 // Validate validates the pow
-func (p *Proof) Validate(bh *BlockHeader, cuckooSize uint32) error {
+func (p *Proof) Validate(header *BlockHeader, cuckooSize uint32) error {
 	logrus.Info("block POW validate")
 
-	if len(bh.POW.Nonces) != ProofSize {
-		return errInvalidPow
-	}
-
-	cuckoo := cuckoo.New(bh.Hash(), cuckooSize)
-	if cuckoo.Verify(bh.POW.Nonces, Easiness) {
+	cuckoo := cuckoo.New(header.Hash(), cuckooSize)
+	if cuckoo.Verify(header.POW.Nonces, Easiness) {
 		return nil
 	}
 
