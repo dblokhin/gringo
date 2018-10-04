@@ -53,8 +53,9 @@ const (
 	// Can provide block headers and the UTXO set for some recent-enough height.
 	CapUtxoHist = 1 << 1
 	// Can provide a list of healthy peers
-	CapPeerList = 1 << 2
-	CapFullNode = CapFullHist | CapUtxoHist | CapPeerList
+	CapPeerList     = 1 << 2
+	CapFastSyncNode = CapUtxoHist | CapPeerList
+	CapFullNode     = CapFullHist | CapUtxoHist | CapPeerList
 )
 
 // Network error codes
