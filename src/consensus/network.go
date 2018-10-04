@@ -29,12 +29,17 @@ const (
 	MsgTypeGetPeerAddrs
 	MsgTypePeerAddrs
 	MsgTypeGetHeaders
+	MsgTypeHeader
 	MsgTypeHeaders
 	MsgTypeGetBlock
 	MsgTypeBlock
 	MsgTypeGetCompactBlock
 	MsgTypeCompactBlock
+	MsgTypeStemTransaction
 	MsgTypeTransaction
+	MsgTypeTxHashSetRequest
+	MsgTypeTxHashSetArchive
+	MsgTypeBanReason
 )
 
 // Capabilities of node
