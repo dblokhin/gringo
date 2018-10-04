@@ -71,6 +71,41 @@ var Testnet2 = consensus.Block{
 	},
 }
 
+// Testnet 3 initial block difficulty, moderately high, taking into account
+// a 30x Cuckoo adjustment factor
+const TESTNET3_INITIAL_DIFFICULTY = 30000
+
+var Testnet3 = consensus.Block{
+	Header: consensus.BlockHeader{
+		Version:         1,
+		Height:          0,
+		Previous:        bytes.Repeat([]byte{0xff}, consensus.BlockHashSize),
+		Timestamp:       time.Date(2018, 7, 8, 18, 0, 0, 0, time.UTC),
+		Difficulty:      0,
+		TotalDifficulty: TESTNET3_INITIAL_DIFFICULTY,
+
+		UTXORoot:       bytes.Repeat([]byte{0x00}, 32),
+		RangeProofRoot: bytes.Repeat([]byte{0x00}, 32),
+		KernelRoot:     bytes.Repeat([]byte{0x00}, 32),
+
+		TotalKernelOffset: bytes.Repeat([]byte{0x00}, 32),
+		TotalKernelSum:    bytes.Repeat([]byte{0x00}, 33),
+
+		Nonce: 4956988373127691,
+		POW: consensus.Proof{
+			CuckooSizeShift: 30,
+			Nonces: []uint32{
+				0xa420dc, 0xc8ffee, 0x10e433e, 0x1de9428, 0x2ed4cea, 0x52d907b, 0x5af0e3f,
+				0x6b8fcae, 0x8319b53, 0x845ca8c, 0x8d2a13e, 0x8d6e4cc, 0x9349e8d, 0xa7a33c5,
+				0xaeac3cb, 0xb193e23, 0xb502e19, 0xb5d9804, 0xc9ac184, 0xd4f4de3, 0xd7a23b8,
+				0xf1d8660, 0xf443756, 0x10b833d2, 0x11418fc5, 0x11b8aeaf, 0x131836ec, 0x132ab818,
+				0x13a46a55, 0x13df89fe, 0x145d65b5, 0x166f9c3a, 0x166fe0ef, 0x178cb36f, 0x185baf68,
+				0x1bbfe563, 0x1bd637b4, 0x1cfc8382, 0x1d1ed012, 0x1e391ca5, 0x1e999b4c, 0x1f7c6d21,
+			},
+		},
+	},
+}
+
 // Mainnet genesis block
 var Mainnet = consensus.Block{
 	Header: consensus.BlockHeader{
