@@ -778,6 +778,12 @@ func (b *BlockHeader) bytesWithoutPOW() []byte {
 		logrus.Fatal(err)
 	}
 
+	if b.Version == 1 {
+		if err := binary.Write(buff, binary.BigEndian, uint64(b.TotalDifficulty)); err != nil {
+			logrus.Fatal(err)
+		}
+	}
+
 	// Write UTXORoot, RangeProofRoot, KernelRoot
 	if len(b.UTXORoot) != BlockHashSize ||
 		len(b.RangeProofRoot) != BlockHashSize ||
@@ -813,17 +819,16 @@ func (b *BlockHeader) bytesWithoutPOW() []byte {
 		logrus.Fatal(err)
 	}
 
+	if b.Version > 1 {
+		if err := binary.Write(buff, binary.BigEndian, uint64(b.TotalDifficulty)); err != nil {
+			logrus.Fatal(err)
+		}
+
+		// TODO: Add scaling difficulty for dual POW.
+	}
+
 	// Write nonce
 	if err := binary.Write(buff, binary.BigEndian, b.Nonce); err != nil {
-		logrus.Fatal(err)
-	}
-
-	// Write Diff & Total Diff
-	if err := binary.Write(buff, binary.BigEndian, uint64(b.Difficulty)); err != nil {
-		logrus.Fatal(err)
-	}
-
-	if err := binary.Write(buff, binary.BigEndian, uint64(b.TotalDifficulty)); err != nil {
 		logrus.Fatal(err)
 	}
 

@@ -6,6 +6,7 @@ package consensus
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"github.com/dblokhin/gringo/src/cuckoo"
 	"github.com/sirupsen/logrus"
@@ -52,6 +53,11 @@ func (p *Proof) Hash() []byte {
 // Bytes returns binary []byte
 func (p *Proof) Bytes() []byte {
 	buff := new(bytes.Buffer)
+
+	// Write size of cuckoo graph.
+	if err := binary.Write(buff, binary.BigEndian, uint64(p.CuckooSizeShift)); err != nil {
+		logrus.Fatal(err)
+	}
 
 	// The solution we serialise depends on the size of the cuckoo graph. The
 	// cycle is always of length 42, but each vertex takes up more bits on
