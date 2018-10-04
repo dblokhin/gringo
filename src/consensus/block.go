@@ -727,7 +727,16 @@ type BlockHeader struct {
 	KernelRoot Hash
 	// Nonce increment used to mine this block
 	Nonce uint64
-	// RangeProof of work data.
+	// Total accumulated sum of kernel offsets since genesis block.
+	TotalKernelOffset Hash
+	// Total accumulated sum of kernel commitments since genesis block.
+	// Should always equal the UTXO commitment sum minus supply.
+	TotalKernelSum secp256k1zkp.Commitment
+	// Total size of the output MMR after applying this block
+	OutputMmrSize uint64
+	// Total size of the kernel MMR after applying this block
+	KernelMmrSize uint64
+	// Proof of work.
 	POW Proof
 	// Difficulty used to mine the block.
 	Difficulty Difficulty
@@ -785,6 +794,22 @@ func (b *BlockHeader) bytesWithoutPOW() []byte {
 	}
 
 	if _, err := buff.Write(b.KernelRoot); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if _, err := buff.Write(b.TotalKernelOffset); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if _, err := buff.Write(b.TotalKernelSum); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if err := binary.Write(buff, binary.BigEndian, b.OutputMmrSize); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if err := binary.Write(buff, binary.BigEndian, b.KernelMmrSize); err != nil {
 		logrus.Fatal(err)
 	}
 
