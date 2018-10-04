@@ -744,9 +744,9 @@ type BlockHeader struct {
 	TotalDifficulty Difficulty
 }
 
-// Bytes implements p2p Message interface
+// Hash is a hash based on the blocks proof of work.
 func (b *BlockHeader) Hash() Hash {
-	hash := blake2b.Sum256(b.bytesWithoutPOW())
+	hash := blake2b.Sum256(b.POW.Bytes())
 
 	return hash[:]
 }
