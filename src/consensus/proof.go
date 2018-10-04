@@ -59,7 +59,7 @@ func (p *Proof) Bytes() []byte {
 	nonceLengthBits := uint(p.CuckooSizeShift) - 1
 
 	// Make a slice just large enough to fit all of the POW bits.
-	bitvecLengthBits := nonceLengthBits * ProofSize
+	bitvecLengthBits := nonceLengthBits * uint(ProofSize)
 	bitvec := make([]uint8, (bitvecLengthBits/8)+1)
 
 	for n, nonce := range p.Nonces {
