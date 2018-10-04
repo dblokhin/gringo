@@ -832,6 +832,11 @@ func (b *BlockHeader) bytesWithoutPOW() []byte {
 		logrus.Fatal(err)
 	}
 
+	// Write size of cuckoo graph.
+	if err := binary.Write(buff, binary.BigEndian, uint64(b.POW.CuckooSizeShift)); err != nil {
+		logrus.Fatal(err)
+	}
+
 	return buff.Bytes()
 }
 
