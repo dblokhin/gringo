@@ -6,7 +6,6 @@ package consensus
 
 import (
 	"bytes"
-	"encoding/binary"
 	"errors"
 	"github.com/dblokhin/gringo/src/cuckoo"
 	"github.com/sirupsen/logrus"
@@ -15,6 +14,9 @@ import (
 
 // RangeProof of work
 type Proof struct {
+	// Power of 2 used for the size of the cuckoo graph
+	CuckooSizeShift uint8
+
 	// The nonces
 	Nonces []uint32
 }
@@ -51,15 +53,29 @@ func (p *Proof) Hash() []byte {
 func (p *Proof) Bytes() []byte {
 	buff := new(bytes.Buffer)
 
-	// Write POW
-	if len(p.Nonces) != ProofSize {
-		logrus.Fatal(errors.New("invalid proof len"))
+	// The solution we serialise depends on the size of the cuckoo graph. The
+	// cycle is always of length 42, but each vertex takes up more bits on
+	// larger graphs, nonceLengthBits is this number of bits.
+	nonceLengthBits := uint(p.CuckooSizeShift) - 1
+
+	// Make a slice just large enough to fit all of the POW bits.
+	bitvecLengthBits := nonceLengthBits * ProofSize
+	bitvec := make([]uint8, (bitvecLengthBits/8)+1)
+
+	for n, nonce := range p.Nonces {
+		// Pack this nonce into the bit stream.
+		for bit := uint(0); bit < nonceLengthBits; bit++ {
+			// If this bit is set, then write it to the correct position in the
+			// stream.
+			if nonce&(1<<bit) != 0 {
+				offsetBits := uint(n)*nonceLengthBits + bit
+				bitvec[offsetBits/8] |= 1 << (offsetBits % 8)
+			}
+		}
 	}
 
-	for i := 0; i < int(ProofSize); i++ {
-		if err := binary.Write(buff, binary.BigEndian, p.Nonces[i]); err != nil {
-			logrus.Fatal(err)
-		}
+	if _, err := buff.Write(bitvec); err != nil {
+		logrus.Fatal(err)
 	}
 
 	return buff.Bytes()
