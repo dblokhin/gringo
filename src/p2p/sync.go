@@ -90,6 +90,11 @@ func NewSyncer(addrs []string, chain Blockchain, mempool Mempool) *Syncer {
 	return sync
 }
 
+// Run begins syncing with peers.
+func (s *Syncer) Run() {
+	s.Pool.Run()
+}
+
 // Stop stops activity
 func (s *Syncer) Stop() {
 	s.Pool.Stop()
