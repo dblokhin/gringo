@@ -127,7 +127,7 @@ func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
 		s.Chain.RUnlock()
 
 		peer.WriteMessage(&resp)
-		logrus.Infof("sended pong")
+		logrus.Infof("Sent Pong to %s", peer.conn.RemoteAddr())
 
 	case *Pong:
 		// update peer info
@@ -136,6 +136,8 @@ func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
 		peerInfo.Height = msg.Height
 		peerInfo.Unlock()
 
+		logrus.Infof("Received Pong from %s", peer.conn.RemoteAddr())
+
 	case *GetPeerAddrs:
 		// MUST NOT be answered
 		// Send answer
@@ -143,7 +145,7 @@ func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
 		if peers != nil {
 			peer.WriteMessage(peers)
 		}
-		logrus.Infof("sended peers (%d)", len(peers.peers))
+		logrus.Infof("Sent %d PeerAddrs to %s", len(peers.peers), peer.conn.RemoteAddr())
 
 	case *PeerAddrs:
 		// Adding peer to pool

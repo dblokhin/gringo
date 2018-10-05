@@ -207,7 +207,7 @@ out:
 				break out
 			}
 
-			logrus.Debugf("received Ping (%s): %s", p.conn.RemoteAddr().String(), msg.String())
+			logrus.Debugf("Received Ping from %s", p.conn.RemoteAddr().String())
 			p.sync.ProcessMessage(p, &msg)
 
 		case consensus.MsgTypePong:
@@ -366,7 +366,7 @@ func (p *Peer) WaitForDisconnect() {
 
 // SendPing sends Ping request to peer
 func (p *Peer) SendPing() {
-	logrus.Info("sending ping")
+	logrus.Infof("Sending Ping to %s", p.conn.RemoteAddr())
 
 	var request Ping
 	request.TotalDifficulty = consensus.Difficulty(1)
@@ -393,7 +393,7 @@ func (p *Peer) SendBlock(block *consensus.Block) {
 
 // SendPeerRequest sends peer request
 func (p *Peer) SendPeerRequest(capabilities consensus.Capabilities) {
-	logrus.Info("sending peer request")
+	logrus.Infof("Sending GetPeerAddrs to %s", p.conn.RemoteAddr())
 	var request GetPeerAddrs
 
 	request.Capabilities = capabilities
