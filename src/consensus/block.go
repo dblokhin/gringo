@@ -738,6 +738,7 @@ type BlockHeader struct {
 	KernelMmrSize uint64
 	// Proof of work.
 	POW Proof
+	// TODO: Remove or calculate this correctly.
 	// Difficulty used to mine the block.
 	Difficulty Difficulty
 	// Total accumulated difficulty since genesis block

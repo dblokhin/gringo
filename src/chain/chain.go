@@ -20,7 +20,6 @@ var Testnet1 = consensus.Block{
 		Height:          0,
 		Previous:        bytes.Repeat([]byte{0xff}, consensus.BlockHashSize),
 		Timestamp:       time.Date(2017, 11, 16, 20, 0, 0, 0, time.UTC),
-		Difficulty:      10,
 		TotalDifficulty: 10,
 
 		UTXORoot:       bytes.Repeat([]byte{0x00}, 32),
@@ -81,7 +80,6 @@ var Testnet3 = consensus.Block{
 		Height:          0,
 		Previous:        bytes.Repeat([]byte{0xff}, consensus.BlockHashSize),
 		Timestamp:       time.Date(2018, 7, 8, 18, 0, 0, 0, time.UTC),
-		Difficulty:      0,
 		TotalDifficulty: TESTNET3_INITIAL_DIFFICULTY,
 
 		UTXORoot:       bytes.Repeat([]byte{0x00}, 32),
@@ -113,7 +111,6 @@ var Mainnet = consensus.Block{
 		Height:          0,
 		Previous:        bytes.Repeat([]byte{0xff}, consensus.BlockHashSize),
 		Timestamp:       time.Date(2018, 8, 14, 0, 0, 0, 0, time.UTC),
-		Difficulty:      1000,
 		TotalDifficulty: 1000,
 
 		UTXORoot:       bytes.Repeat([]byte{0x00}, 32),
