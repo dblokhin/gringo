@@ -742,6 +742,8 @@ type BlockHeader struct {
 	Difficulty Difficulty
 	// Total accumulated difficulty since genesis block
 	TotalDifficulty Difficulty
+	// Difficulty scaling factor between the different proofs of work
+	ScalingDifficulty Difficulty
 }
 
 // Hash is a hash based on the blocks proof of work.
@@ -876,7 +878,14 @@ func (b *BlockHeader) Read(r io.Reader) error {
 		return err
 	}
 
+	// FIXME: Check timestamp is in correct range.
 	b.Timestamp = time.Unix(ts, 0).UTC()
+
+	if b.Version == 1 {
+		if err := binary.Read(r, binary.BigEndian, &b.TotalDifficulty); err != nil {
+			return err
+		}
+	}
 
 	// Read UTXORoot, RangeProofRoot, KernelRoot
 	b.UTXORoot = make([]byte, BlockHashSize)
@@ -894,29 +903,79 @@ func (b *BlockHeader) Read(r io.Reader) error {
 		return err
 	}
 
+	b.TotalKernelOffset = make([]byte, secp256k1zkp.SecretKeySize)
+	if _, err := io.ReadFull(r, b.TotalKernelOffset); err != nil {
+		return err
+	}
+
+	b.TotalKernelSum = make([]byte, secp256k1zkp.PedersenCommitmentSize)
+	if _, err := io.ReadFull(r, b.TotalKernelSum); err != nil {
+		return err
+	}
+
+	if err := binary.Read(r, binary.BigEndian, &b.OutputMmrSize); err != nil {
+		return err
+	}
+
+	if err := binary.Read(r, binary.BigEndian, &b.KernelMmrSize); err != nil {
+		return err
+	}
+
+	// Read the proof of work.
+
+	if b.Version != 1 {
+		if err := binary.Read(r, binary.BigEndian, &b.TotalDifficulty); err != nil {
+			return err
+		}
+
+		if err := binary.Read(r, binary.BigEndian, &b.ScalingDifficulty); err != nil {
+			return err
+		}
+	}
+
 	// Read nonce
 	if err := binary.Read(r, binary.BigEndian, &b.Nonce); err != nil {
 		return err
 	}
 
-	// Read Diff & Total Diff
-	if err := binary.Read(r, binary.BigEndian, &b.Difficulty); err != nil {
+	if err := binary.Read(r, binary.BigEndian, &b.POW.CuckooSizeShift); err != nil {
 		return err
 	}
 
-	if err := binary.Read(r, binary.BigEndian, &b.TotalDifficulty); err != nil {
+	if b.POW.CuckooSizeShift == 0 || b.POW.CuckooSizeShift > 64 {
+		return errors.New("Invalid cuckoo graph size")
+	}
+
+	b.POW.Nonces = make([]uint32, ProofSize)
+
+	nonceLengthBits := uint(b.POW.CuckooSizeShift) - 1
+
+	// Make a slice just large enough to fit all of the POW bits.
+	bitvecLengthBits := nonceLengthBits * uint(ProofSize)
+	bitvec := make([]uint8, (bitvecLengthBits+7)/8)
+
+	// TODO: Clean this up.
+
+	if _, err := io.ReadFull(r, bitvec); err != nil {
 		return err
 	}
 
-	// Read POW
-	pow := make([]uint32, ProofSize)
 	for i := 0; i < ProofSize; i++ {
-		if err := binary.Read(r, binary.BigEndian, &pow[i]); err != nil {
-			return err
+		var nonce uint32
+
+		// Read this nonce from the packed bitstream.
+		for bit := uint(0); bit < nonceLengthBits; bit++ {
+			// Find the position of this bit in bitvec
+			offsetBits := uint(i)*nonceLengthBits + bit
+			// If this bit is set in bitvec then set the same bit in the nonce.
+			if bitvec[offsetBits/8]&(1<<(offsetBits%8)) != 0 {
+				nonce |= 1 << bit
+			}
 		}
+
+		b.POW.Nonces[i] = nonce
 	}
 
-	b.POW = NewProof(pow)
 	return nil
 }
 

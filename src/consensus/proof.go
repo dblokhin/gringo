@@ -60,7 +60,7 @@ func (p *Proof) Bytes() []byte {
 
 	// Make a slice just large enough to fit all of the POW bits.
 	bitvecLengthBits := nonceLengthBits * uint(ProofSize)
-	bitvec := make([]uint8, (bitvecLengthBits/8)+1)
+	bitvec := make([]uint8, (bitvecLengthBits+7)/8)
 
 	for n, nonce := range p.Nonces {
 		// Pack this nonce into the bit stream.
