@@ -161,6 +161,9 @@ func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
 
 		peer.WriteMessage(&resp)
 
+	case *BlockHeader:
+		logrus.Debugf("seen header for height %d: %v", msg.Header.Height, msg.Header.Hash())
+
 	case *BlockHeaders:
 		if err := s.Chain.ProcessHeaders(msg.Headers); err != nil {
 			// ban peer ?

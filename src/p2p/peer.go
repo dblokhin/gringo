@@ -237,6 +237,16 @@ out:
 
 			p.sync.ProcessMessage(p, &msg)
 
+		case consensus.MsgTypeHeader:
+			logrus.Infof("header notification from peer %s", p.conn.RemoteAddr().String())
+
+			var msg BlockHeader
+			if exitError = msg.Read(rl); exitError != nil {
+				break out
+			}
+
+			p.sync.ProcessMessage(p, &msg)
+
 		case consensus.MsgTypeHeaders:
 			logrus.Infof("receiving headers (%s)", p.conn.RemoteAddr().String())
 

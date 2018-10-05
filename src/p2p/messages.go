@@ -314,6 +314,41 @@ func (h GetBlock) String() string {
 	return fmt.Sprintf("%#v", h)
 }
 
+// BlockHeader is a p2p message that serves as a notification that there is a
+// new block. If this block isn't known then the block can be requested from
+// the network. BlockHeaders are unsolicited rather than as a response to a
+// request.
+type BlockHeader struct {
+	// Header is a single block header.
+	Header consensus.BlockHeader
+}
+
+// Bytes implements Message interface
+func (h *BlockHeader) Bytes() []byte {
+	buff := new(bytes.Buffer)
+
+	if _, err := buff.Write(h.Header.Bytes()); err != nil {
+		logrus.Fatal(err)
+	}
+
+	return buff.Bytes()
+}
+
+// Type implements Message interface
+func (h *BlockHeader) Type() uint8 {
+	return consensus.MsgTypeHeader
+}
+
+// Read implements Message interface
+func (h *BlockHeader) Read(r io.Reader) error {
+	return h.Header.Read(r)
+}
+
+// String implements String() interface
+func (h BlockHeader) String() string {
+	return fmt.Sprintf("%#v", h)
+}
+
 // BlockHeaders message with grin headers
 type BlockHeaders struct {
 	Headers []consensus.BlockHeader
