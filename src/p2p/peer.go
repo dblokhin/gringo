@@ -6,6 +6,7 @@ package p2p
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -175,6 +176,7 @@ func (p *Peer) readHandler() {
 out:
 	for atomic.LoadInt32(&p.disconnect) == 0 {
 		if exitError = header.Read(input); exitError != nil {
+			logrus.Debugf("Failed to read message from peer %v", p.conn.RemoteAddr())
 			break out
 		}
 
@@ -183,8 +185,19 @@ out:
 			break out
 		}
 
-		// limit read
-		rl := io.LimitReader(input, int64(header.Len))
+		// Read the whole message. If the peer disconnects mid-way through
+		// ReadFull will return an error.
+		readBuffer := make([]byte, header.Len)
+		_, err := io.ReadFull(input, readBuffer)
+		if err != nil {
+			logrus.Infof("Failed to read message: %v", err)
+			break out
+		}
+
+		// Print the message for debugging purposes.
+		logrus.Debugf("Received message from %s: %02x%02x", p.conn.RemoteAddr(), header.Bytes(), readBuffer)
+
+		rl := bytes.NewReader(readBuffer)
 
 		switch header.Type {
 		case consensus.MsgTypePing:
