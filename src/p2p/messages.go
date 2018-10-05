@@ -25,6 +25,25 @@ type Header struct {
 	Len uint64
 }
 
+// Bytes serialises the header to its on-the-wire representation.
+func (h *Header) Bytes() []byte {
+	buff := new(bytes.Buffer)
+
+	if _, err := buff.Write(h.magic[:]); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if err := binary.Write(buff, binary.BigEndian, h.Type); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if err := binary.Write(buff, binary.BigEndian, h.Len); err != nil {
+		logrus.Fatal(err)
+	}
+
+	return buff.Bytes()
+}
+
 // Write writes header as binary data to writer
 func (h *Header) Write(wr io.Writer) error {
 	if _, err := wr.Write(h.magic[:]); err != nil {

@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"github.com/dblokhin/gringo/src/consensus"
 	"github.com/sirupsen/logrus"
 	"io"
@@ -295,8 +296,16 @@ out:
 			p.sync.ProcessMessage(p, &msg)
 
 		default:
-			logrus.Debug("received unexpected message: ", header)
-			exitError = errors.New("receive unexpected message (type) from peer")
+			// Print the content of the unknown message.
+			buff := make([]byte, header.Len)
+			if _, err := io.ReadFull(rl, buff); err != nil {
+				logrus.Debugf("failed to read message body: %v", err)
+				break out
+			}
+
+			logrus.Debugf("received unexpected message: %02x%02x", header.Bytes(), buff)
+
+			exitError = fmt.Errorf("received unexpected message from peer: %v", header)
 			break out
 		}
 
