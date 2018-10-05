@@ -19,6 +19,11 @@ const (
 // Hash is hashes (block hash, commitments and so on)
 type Hash []byte
 
+// String prints the hexadecimal encoding of the hash.
+func (h Hash) String() string {
+	return hex.EncodeToString(h)
+}
+
 // ShortID returns shortID from Hash
 func (h Hash) ShortID(blockHash Hash) ShortID {
 	result := make(ShortID, ShortIDSize+2)
