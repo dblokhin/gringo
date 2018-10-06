@@ -26,8 +26,8 @@ var (
 )
 
 // Validate validates the pow
-func (p *Proof) Validate(header *BlockHeader, cuckooSize uint32) error {
-	logrus.Info("block POW validate")
+func (p *Proof) Validate(header *BlockHeader, cuckooSize uint8) error {
+	logrus.Infof("block POW validate for size %d", cuckooSize)
 
 	cuckoo := cuckoo.New(header.Hash(), cuckooSize)
 	if cuckoo.Verify(header.POW.Nonces, Easiness) {

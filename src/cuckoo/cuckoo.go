@@ -11,7 +11,7 @@ import (
 )
 
 // New returns Cuckoo instance
-func New(key []byte, sizeShift uint32) *Cuckoo {
+func New(key []byte, sizeShift uint8) *Cuckoo {
 	bsum := blake2b.Sum256(key)
 	key = bsum[:]
 
