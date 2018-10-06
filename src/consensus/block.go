@@ -9,10 +9,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/dblokhin/gringo/src/secp256k1zkp"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/blake2b"
 	"io"
-	"secp256k1zkp"
 	"sort"
 	"time"
 )

@@ -4,7 +4,7 @@
 
 package chain
 
-import "consensus"
+import "github.com/dblokhin/gringo/src/consensus"
 
 // Storage represents storage methods for backends
 // Storage doesnt check consensus rules!

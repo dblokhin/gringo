@@ -5,9 +5,9 @@
 package p2p
 
 import (
-	"consensus"
 	"errors"
 	"fmt"
+	"github.com/dblokhin/gringo/src/consensus"
 	"github.com/sirupsen/logrus"
 	"net"
 	"sync"

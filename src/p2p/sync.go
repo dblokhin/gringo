@@ -5,7 +5,7 @@
 package p2p
 
 import (
-	"consensus"
+	"github.com/dblokhin/gringo/src/consensus"
 	"github.com/sirupsen/logrus"
 )
 

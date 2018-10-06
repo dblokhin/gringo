@@ -9,9 +9,9 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/dblokhin/gringo/src/secp256k1zkp"
 	"github.com/sirupsen/logrus"
 	"io"
-	"secp256k1zkp"
 	"sort"
 )
 

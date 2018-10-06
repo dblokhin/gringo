@@ -6,9 +6,9 @@ package consensus
 
 import (
 	"bytes"
-	"cuckoo"
 	"encoding/binary"
 	"errors"
+	"github.com/dblokhin/gringo/src/cuckoo"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/blake2b"
 )

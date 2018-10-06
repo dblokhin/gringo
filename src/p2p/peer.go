@@ -6,9 +6,9 @@ package p2p
 
 import (
 	"bufio"
-	"consensus"
 	"encoding/hex"
 	"errors"
+	"github.com/dblokhin/gringo/src/consensus"
 	"github.com/sirupsen/logrus"
 	"io"
 	"net"
