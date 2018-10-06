@@ -243,6 +243,11 @@ func (c *Chain) GetBlockID(b consensus.BlockID) *consensus.Block {
 }
 
 func (c *Chain) ProcessHeaders(headers []consensus.BlockHeader) error {
+	for _, header := range headers {
+		if err := header.Validate(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
