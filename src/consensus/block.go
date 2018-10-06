@@ -1000,13 +1000,20 @@ func (b *BlockHeader) Validate() error {
 	}
 
 	// Check POW
-	// make sure the pow hash shows a difficulty at least as large as the target
-	// difficulty
-	if b.POW.ToDifficulty() < b.Difficulty {
-		return errors.New("difficulty is invalid")
+	isPrimaryPow := b.POW.CuckooSizeShift != SecondPowSizeShift
+
+	// Either the size shift must be a valid primary POW (greater than the
+	// minimum size shift) or equal to the secondary POW size shift.
+	if b.POW.CuckooSizeShift < DefaultSizeShift && isPrimaryPow {
+		return fmt.Errorf("Cuckoo size too small: %d", b.POW.CuckooSizeShift)
 	}
 
-	if err := b.POW.Validate(b, DefaultSizeShift); err != nil {
+	// The primary POW must have a scaling factor of 1.
+	if isPrimaryPow && b.ScalingDifficulty != 1 {
+		return fmt.Errorf("Invalid scaling difficulty: %d", b.ScalingDifficulty)
+	}
+
+	if err := b.POW.Validate(b, b.POW.CuckooSizeShift); err != nil {
 		return err
 	}
 
@@ -1015,11 +1022,15 @@ func (b *BlockHeader) Validate() error {
 
 // ValidateBlockVersion helper for validation block header version
 func ValidateBlockVersion(height uint64, version uint16) bool {
-	if height <= HardForkInterval && version == 1 {
-		return true
+	if height < HardForkV2Height {
+		return version == 1
+	} else if height < HardForkInterval {
+		return version == 2
+	} else if height < 2*HardForkInterval {
+		return version == 3
+	} else {
+		return false
 	}
-
-	return false
 }
 
 // String implements String() interface

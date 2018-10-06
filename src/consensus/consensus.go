@@ -53,7 +53,10 @@ const (
 	ProofSize int = 42
 
 	// DefaultSizeShift Default Cuckoo Cycle size shift used for mining and validating.
-	DefaultSizeShift uint32 = 30
+	DefaultSizeShift uint8 = 30
+
+	/// Secondary proof-of-work size shift, meant to be ASIC resistant.
+	SecondPowSizeShift uint8 = 29
 
 	// Easiness Default Cuckoo Cycle easiness, high enough to have good likeliness to find
 	// a solution.
@@ -83,6 +86,9 @@ const (
 	// Fork every 250,000 blocks for first 2 years, simple number and just a
 	// little less than 6 months.
 	HardForkInterval uint64 = 250000
+
+	// The block height at which version 2 blocks are valid
+	HardForkV2Height uint64 = 95000
 
 	// Time window in blocks to calculate block time median
 	MedianTimeWindow int = 11
