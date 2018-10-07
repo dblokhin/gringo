@@ -37,3 +37,21 @@ func TestValidSolution(t *testing.T) {
 		t.Error("Verify failed")
 	}
 }
+
+func TestShouldFindCycle(t *testing.T) {
+	header := []byte{49}
+	cuckoo := New(header, 20)
+
+	// Construct the example graph in figure 1 of the cuckoo cycle paper.
+	edges := make([]*Edge, 6)
+	edges[0] = &Edge{U: 8, V: 5}
+	edges[1] = &Edge{U: 10, V: 5}
+	edges[2] = &Edge{U: 4, V: 9}
+	edges[3] = &Edge{U: 4, V: 13}
+	edges[4] = &Edge{U: 8, V: 9}
+	edges[5] = &Edge{U: 10, V: 13}
+
+	if cuckoo.findCycleLength(edges, 6) != 6 {
+		t.Error("Verify failed")
+	}
+}
