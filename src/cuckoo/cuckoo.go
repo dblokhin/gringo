@@ -75,9 +75,6 @@ func (c *Cuckoo) findCycleLength(edges []*Edge) int {
 
 loop:
 	for {
-		// The vertices that belong to our 42-cycle are described by the entries
-		// in edges. Now check that these vertices are all connected by a cycle.
-
 		// If the current cycle length is even we need to look for an edge from
 		// U -> V.
 		vertexInUPartition := cycle&1 == 0
