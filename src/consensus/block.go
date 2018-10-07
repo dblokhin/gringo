@@ -84,6 +84,10 @@ func (b *Block) Bytes() []byte {
 
 	// Write inputs
 	for _, input := range b.Inputs {
+		if err := binary.Write(buff, binary.BigEndian, input.Features); err != nil {
+			logrus.Fatal(err)
+		}
+
 		if _, err := buff.Write(input.Commit); err != nil {
 			logrus.Fatal(err)
 		}
@@ -135,6 +139,10 @@ func (b *Block) Read(r io.Reader) error {
 	// Read inputs
 	b.Inputs = make([]Input, inputs)
 	for i := uint64(0); i < inputs; i++ {
+		if err := binary.Read(r, binary.BigEndian, &b.Inputs[i].Features); err != nil {
+			return err
+		}
+
 		commitment := make([]byte, secp256k1zkp.PedersenCommitmentSize)
 		if _, err := io.ReadFull(r, commitment); err != nil {
 			return err
@@ -416,7 +424,8 @@ func (b *CompactBlock) Hash() Hash {
 type BlockList []Block
 
 type Input struct {
-	Commit secp256k1zkp.Commitment
+	Features OutputFeatures
+	Commit   secp256k1zkp.Commitment
 }
 
 // InputList sortable list of inputs
