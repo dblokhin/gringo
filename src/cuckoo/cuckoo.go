@@ -64,7 +64,7 @@ func (c *Cuckoo) NewEdge(nonce uint32) *Edge {
 
 // findCycleLength attempts to walk the given edges and returns the length of
 // the cycle.
-func (c *Cuckoo) findCycleLength(edges []*Edge, proofSize int) int {
+func (c *Cuckoo) findCycleLength(edges []*Edge) int {
 	i := 0    // first node
 	flag := 0 // flag indicates what we need compare U or V
 	cycle := 0
@@ -79,7 +79,7 @@ loop:
 		// The vertices that belong to our 42-cycle are described by the entries
 		// in edges. Now check that these vertices are all connected by a cycle.
 		if flag%2 == 0 {
-			for j := 0; j < proofSize; j++ {
+			for j := range edges {
 				if j != i && !edges[j].usedU && edges[i].U == edges[j].U {
 					edges[i].usedU = true
 					edges[j].usedU = true
@@ -92,7 +92,7 @@ loop:
 				}
 			}
 		} else {
-			for j := 0; j < proofSize; j++ {
+			for j := range edges {
 				if j != i && !edges[j].usedV && edges[i].V == edges[j].V {
 					edges[i].usedV = true
 					edges[j].usedV = true
@@ -137,5 +137,5 @@ func (c *Cuckoo) Verify(nonces []uint32, ease uint64) bool {
 		edges[i] = c.NewEdge(nonces[i])
 	}
 
-	return c.findCycleLength(edges, proofSize) == proofSize
+	return c.findCycleLength(edges) == proofSize
 }

@@ -51,7 +51,7 @@ func TestShouldFindCycle(t *testing.T) {
 	edges[4] = &Edge{U: 8, V: 9}
 	edges[5] = &Edge{U: 10, V: 13}
 
-	if cuckoo.findCycleLength(edges, 6) != 6 {
+	if cuckoo.findCycleLength(edges) != 6 {
 		t.Error("Verify failed")
 	}
 }
