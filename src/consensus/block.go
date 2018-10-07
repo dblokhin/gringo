@@ -929,6 +929,8 @@ func (b *BlockHeader) Read(r io.Reader) error {
 		if err := binary.Read(r, binary.BigEndian, &b.ScalingDifficulty); err != nil {
 			return err
 		}
+	} else {
+		b.ScalingDifficulty = 1
 	}
 
 	// Read nonce
