@@ -32,7 +32,7 @@ func New(key []byte, sizeShift uint8) *Cuckoo {
 	}
 }
 
-// Edge from u to v
+// Edge represents an edge in the cuckoo graph from vertex U to vertex V.
 type Edge struct {
 	U uint64
 	V uint64
@@ -72,15 +72,17 @@ func (c *Cuckoo) Verify(nonces []uint32, ease uint64) bool {
 
 	easiness := ease * c.size / 100
 
-	// Preparing edges
-	proof := make([]*Edge, proofSize)
+	// Create graph edges from the nonces.
+	edges := make([]*Edge, proofSize)
 	for i := 0; i < proofSize; i++ {
+		// Ensure nonces are in ascending order and that they are all of the
+		// correct easiness.
 		if uint64(nonces[i]) >= easiness || (i != 0 && nonces[i] <= nonces[i-1]) {
+			logrus.Infof("Nonce %d is invalid", i)
 			return false
 		}
 
-		proof[i] = c.NewEdge(nonces[i])
-		logrus.Debugf("%#v", *proof[i])
+		edges[i] = c.NewEdge(nonces[i])
 	}
 
 	// Checking edges
@@ -88,13 +90,20 @@ func (c *Cuckoo) Verify(nonces []uint32, ease uint64) bool {
 	flag := 0 // flag indicates what we need compare U or V
 	cycle := 0
 
+	// Even indexed vertices are part of the U set of vertices where odd indexed
+	// vertices are part of the V set. Vertices in U are never adjacent to each
+	// other and likewise vertices in V are never adjacent to each other. This
+	// forms the basis of our bipartite graph.
+
 loop:
 	for {
+		// The vertices that belong to our 42-cycle are described by the entries
+		// in edges. Now check that these vertices are all connected by a cycle.
 		if flag%2 == 0 {
 			for j := 0; j < proofSize; j++ {
-				if j != i && !proof[j].usedU && proof[i].U == proof[j].U {
-					proof[i].usedU = true
-					proof[j].usedU = true
+				if j != i && !edges[j].usedU && edges[i].U == edges[j].U {
+					edges[i].usedU = true
+					edges[j].usedU = true
 
 					i = j
 					flag ^= 1
@@ -105,9 +114,9 @@ loop:
 			}
 		} else {
 			for j := 0; j < proofSize; j++ {
-				if j != i && !proof[j].usedV && proof[i].V == proof[j].V {
-					proof[i].usedV = true
-					proof[j].usedV = true
+				if j != i && !edges[j].usedV && edges[i].V == edges[j].V {
+					edges[i].usedV = true
+					edges[j].usedV = true
 
 					i = j
 					flag ^= 1
