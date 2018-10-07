@@ -827,7 +827,9 @@ func (b *BlockHeader) bytesWithoutPOW() []byte {
 			logrus.Fatal(err)
 		}
 
-		// TODO: Add scaling difficulty for dual POW.
+		if err := binary.Write(buff, binary.BigEndian, uint64(b.ScalingDifficulty)); err != nil {
+			logrus.Fatal(err)
+		}
 	}
 
 	// Write nonce
