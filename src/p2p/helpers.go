@@ -85,7 +85,7 @@ func deserializeTCPAddr(r io.Reader) (*net.TCPAddr, error) {
 		}
 
 	default:
-		return nil, fmt.Errorf("invalid ipFlag: %V", ipFlag)
+		return nil, fmt.Errorf("invalid ipFlag: %v", ipFlag)
 	}
 
 	if err := binary.Read(r, binary.BigEndian, &ipPort); err != nil {
