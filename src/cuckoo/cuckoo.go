@@ -10,23 +10,24 @@ import (
 	"golang.org/x/crypto/blake2b"
 )
 
-// New returns Cuckoo instance
+// New returns a new instance of a Cuckoo cycle verifier. key is the data used
+// to derived the siphash keys from and sizeShift is the number of vertices in
+// the cuckoo graph as an exponent of 2.
 func New(key []byte, sizeShift uint8) *Cuckoo {
 	bsum := blake2b.Sum256(key)
 	key = bsum[:]
 
-	k0 := binary.LittleEndian.Uint64(key[:8])
-	k1 := binary.LittleEndian.Uint64(key[8:16])
-
 	v := make([]uint64, 4)
-	v[0] = k0 ^ 0x736f6d6570736575
-	v[1] = k1 ^ 0x646f72616e646f6d
-	v[2] = k0 ^ 0x6c7967656e657261
-	v[3] = k1 ^ 0x7465646279746573
+	v[0] = binary.LittleEndian.Uint64(key[:8])
+	v[1] = binary.LittleEndian.Uint64(key[8:16])
+	v[2] = binary.LittleEndian.Uint64(key[16:24])
+	v[3] = binary.LittleEndian.Uint64(key[24:32])
+
+	numVertices := uint64(1) << sizeShift
 
 	return &Cuckoo{
-		mask: (uint64(1)<<sizeShift)/2 - 1,
-		size: uint64(1) << sizeShift,
+		mask: numVertices/2 - 1,
+		size: numVertices,
 		v:    v,
 	}
 }
@@ -43,6 +44,8 @@ type Edge struct {
 // Cuckoo cycle context
 type Cuckoo struct {
 	mask uint64
+
+	// size is the number of vertices in the cuckoo graph.
 	size uint64
 
 	v []uint64
