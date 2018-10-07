@@ -48,6 +48,7 @@ type Cuckoo struct {
 	// size is the number of vertices in the cuckoo graph.
 	size uint64
 
+	// v is the key for siphash
 	v []uint64
 }
 
@@ -68,11 +69,6 @@ func (c *Cuckoo) findCycleLength(edges []*Edge) int {
 	i := 0     // first node
 	cycle := 0 // the current length of the cycle
 
-	// Even indexed vertices are part of the U set of vertices where odd indexed
-	// vertices are part of the V set. Vertices in U are never adjacent to each
-	// other and likewise vertices in V are never adjacent to each other. This
-	// forms the basis of our bipartite graph.
-
 loop:
 	for {
 		// If the current cycle length is even we need to look for an edge from
@@ -80,6 +76,7 @@ loop:
 		vertexInUPartition := cycle&1 == 0
 
 		if vertexInUPartition {
+			// Find an unused edge that connects to the current vertex.
 			for j := range edges {
 				if j != i && !edges[j].usedU && edges[i].U == edges[j].U {
 					edges[i].usedU = true
@@ -92,6 +89,7 @@ loop:
 				}
 			}
 		} else {
+			// Find an unused edge that connects to the current vertex.
 			for j := range edges {
 				if j != i && !edges[j].usedV && edges[i].V == edges[j].V {
 					edges[i].usedV = true
@@ -105,6 +103,7 @@ loop:
 			}
 		}
 
+		// If we didn't find a match for this vertex then we're done.
 		break
 	}
 
