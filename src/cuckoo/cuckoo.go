@@ -65,9 +65,8 @@ func (c *Cuckoo) NewEdge(nonce uint32) *Edge {
 // findCycleLength attempts to walk the given edges and returns the length of
 // the cycle.
 func (c *Cuckoo) findCycleLength(edges []*Edge) int {
-	i := 0    // first node
-	flag := 0 // flag indicates what we need compare U or V
-	cycle := 0
+	i := 0     // first node
+	cycle := 0 // the current length of the cycle
 
 	// Even indexed vertices are part of the U set of vertices where odd indexed
 	// vertices are part of the V set. Vertices in U are never adjacent to each
@@ -78,14 +77,18 @@ loop:
 	for {
 		// The vertices that belong to our 42-cycle are described by the entries
 		// in edges. Now check that these vertices are all connected by a cycle.
-		if flag%2 == 0 {
+
+		// If the current cycle length is even we need to look for an edge from
+		// U -> V.
+		vertexInUPartition := cycle&1 == 0
+
+		if vertexInUPartition {
 			for j := range edges {
 				if j != i && !edges[j].usedU && edges[i].U == edges[j].U {
 					edges[i].usedU = true
 					edges[j].usedU = true
 
 					i = j
-					flag ^= 1
 					cycle++
 
 					continue loop
@@ -98,7 +101,6 @@ loop:
 					edges[j].usedV = true
 
 					i = j
-					flag ^= 1
 					cycle++
 
 					continue loop
