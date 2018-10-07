@@ -42,7 +42,9 @@ func TestShouldFindCycle(t *testing.T) {
 	header := []byte{49}
 	cuckoo := New(header, 20)
 
-	// Construct the example graph in figure 1 of the cuckoo cycle paper.
+	// Construct the example graph in figure 1 of the cuckoo cycle paper. The
+	// cycle is: 8 -> 9 -> 4 -> 13 -> 10 -> 5 -> 8.
+
 	edges := make([]*Edge, 6)
 	edges[0] = &Edge{U: 8, V: 5}
 	edges[1] = &Edge{U: 10, V: 5}
@@ -53,5 +55,42 @@ func TestShouldFindCycle(t *testing.T) {
 
 	if cuckoo.findCycleLength(edges) != 6 {
 		t.Error("Verify failed")
+	}
+}
+
+func TestShouldNotFindCycle(t *testing.T) {
+	cuckoo := New([]byte{49}, 20)
+
+	// Construct a path that isn't closed
+	// 2 -> 5 -> 4 -> 9 -> 8 -> 11 -> 10
+
+	edges := make([]*Edge, 6)
+	edges[0] = &Edge{U: 1, V: 5}
+	edges[1] = &Edge{U: 5, V: 4}
+	edges[2] = &Edge{U: 4, V: 9}
+	edges[3] = &Edge{U: 9, V: 8}
+	edges[4] = &Edge{U: 8, V: 11}
+	edges[5] = &Edge{U: 11, V: 10}
+
+	cycle := cuckoo.findCycleLength(edges)
+	if cycle != 0 {
+		t.Errorf("Verify failed, found unexpected %d-cycle", cycle)
+	}
+}
+
+func TestShouldNotFindCycleNotBipartite(t *testing.T) {
+	cuckoo := New([]byte{49}, 20)
+
+	// Construct a length 3 cycle that implies a non-bipartite graph.
+	// 2 -> 4 -> 5 -> 2
+
+	edges := make([]*Edge, 3)
+	edges[0] = &Edge{U: 2, V: 4}
+	edges[1] = &Edge{U: 4, V: 5}
+	edges[2] = &Edge{U: 5, V: 2}
+
+	cycle := cuckoo.findCycleLength(edges)
+	if cycle != 0 {
+		t.Errorf("Verify failed, found unexpected %d-cycle", cycle)
 	}
 }
