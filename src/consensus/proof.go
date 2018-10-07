@@ -6,6 +6,7 @@ package consensus
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"github.com/dblokhin/gringo/src/cuckoo"
 	"github.com/sirupsen/logrus"
@@ -29,7 +30,7 @@ var (
 func (p *Proof) Validate(header *BlockHeader, cuckooSize uint8) error {
 	logrus.Infof("block POW validate for size %d", cuckooSize)
 
-	cuckoo := cuckoo.New(header.Hash(), cuckooSize)
+	cuckoo := cuckoo.New(header.bytesWithoutPOW(), cuckooSize)
 	if cuckoo.Verify(header.POW.Nonces, Easiness) {
 		return nil
 	}
@@ -49,8 +50,8 @@ func (p *Proof) Hash() []byte {
 	return hash[:]
 }
 
-// Bytes returns binary []byte
-func (p *Proof) Bytes() []byte {
+// ProofBytes returns the serialised proof of work nonces.
+func (p *Proof) ProofBytes() []byte {
 	buff := new(bytes.Buffer)
 
 	// The solution we serialise depends on the size of the cuckoo graph. The
@@ -77,6 +78,20 @@ func (p *Proof) Bytes() []byte {
 	if _, err := buff.Write(bitvec); err != nil {
 		logrus.Fatal(err)
 	}
+
+	return buff.Bytes()
+}
+
+// Bytes returns binary []byte
+func (p *Proof) Bytes() []byte {
+	buff := new(bytes.Buffer)
+
+	// Write size of cuckoo graph.
+	if err := binary.Write(buff, binary.BigEndian, uint64(p.CuckooSizeShift)); err != nil {
+		logrus.Fatal(err)
+	}
+
+	buff.Write(p.ProofBytes())
 
 	return buff.Bytes()
 }

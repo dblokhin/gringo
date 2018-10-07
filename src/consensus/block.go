@@ -749,7 +749,7 @@ type BlockHeader struct {
 
 // Hash is a hash based on the blocks proof of work.
 func (b *BlockHeader) Hash() Hash {
-	hash := blake2b.Sum256(b.POW.Bytes())
+	hash := blake2b.Sum256(b.POW.ProofBytes())
 
 	return hash[:]
 }
@@ -834,11 +834,6 @@ func (b *BlockHeader) bytesWithoutPOW() []byte {
 
 	// Write nonce
 	if err := binary.Write(buff, binary.BigEndian, b.Nonce); err != nil {
-		logrus.Fatal(err)
-	}
-
-	// Write size of cuckoo graph.
-	if err := binary.Write(buff, binary.BigEndian, uint64(b.POW.CuckooSizeShift)); err != nil {
 		logrus.Fatal(err)
 	}
 
