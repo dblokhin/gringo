@@ -87,7 +87,7 @@ func (p *Proof) Bytes() []byte {
 	buff := new(bytes.Buffer)
 
 	// Write size of cuckoo graph.
-	if err := binary.Write(buff, binary.BigEndian, uint64(p.CuckooSizeShift)); err != nil {
+	if err := binary.Write(buff, binary.BigEndian, p.CuckooSizeShift); err != nil {
 		logrus.Fatal(err)
 	}
 
