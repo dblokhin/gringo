@@ -466,6 +466,12 @@ func (input *Input) Read(r io.Reader) error {
 	return nil
 }
 
+// Hash returns a hash of the serialised input.
+func (input *Input) Hash() []byte {
+	hashed := blake2b.Sum256(input.Bytes())
+	return hashed[:]
+}
+
 // InputList sortable list of inputs
 type InputList []Input
 
@@ -473,8 +479,9 @@ func (m InputList) Len() int {
 	return len(m)
 }
 
+// Less is used to order inputs by their hash.
 func (m InputList) Less(i, j int) bool {
-	return bytes.Compare(m[i].Commit, m[j].Commit) < 0
+	return bytes.Compare(m[i].Hash(), m[j].Hash()) < 0
 }
 
 func (m InputList) Swap(i, j int) {
@@ -593,6 +600,12 @@ func (p Output) String() string {
 	return fmt.Sprintf("%#v", p)
 }
 
+// Hash returns a hash of the serialised output.
+func (o *Output) Hash() []byte {
+	hashed := blake2b.Sum256(o.BytesWithoutProof())
+	return hashed[:]
+}
+
 // OutputList sortable list of outputs
 type OutputList []Output
 
@@ -600,12 +613,9 @@ func (m OutputList) Len() int {
 	return len(m)
 }
 
+// Less is used to order outputs by their hash.
 func (m OutputList) Less(i, j int) bool {
-
-	m_i := m[i].Bytes()
-	m_j := m[j].Bytes()
-
-	return bytes.Compare(m_i, m_j) < 0
+	return bytes.Compare(m[i].Hash(), m[j].Hash()) < 0
 }
 
 func (m OutputList) Swap(i, j int) {
@@ -635,6 +645,12 @@ type TxKernel struct {
 	// The signature proving the excess is a valid public key, which signs
 	// the transaction fee.
 	ExcessSig Hash
+}
+
+// Hash returns a hash of the serialised kernel.
+func (k *TxKernel) Hash() []byte {
+	hashed := blake2b.Sum256(k.Bytes())
+	return hashed[:]
 }
 
 // Read implements p2p Message interface
@@ -717,12 +733,9 @@ func (m TxKernelList) Len() int {
 	return len(m)
 }
 
+// Less is used to order kernels by their hash.
 func (m TxKernelList) Less(i, j int) bool {
-
-	m_i := m[i].Bytes()
-	m_j := m[j].Bytes()
-
-	return bytes.Compare(m_i, m_j) < 0
+	return bytes.Compare(m[i].Hash(), m[j].Hash()) < 0
 }
 
 func (m TxKernelList) Swap(i, j int) {
