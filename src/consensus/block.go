@@ -30,6 +30,16 @@ const (
 	CoinbaseOutput OutputFeatures = 1 << 0
 )
 
+func (f OutputFeatures) String() string {
+	switch f {
+	case DefaultOutput:
+		return ""
+	case CoinbaseOutput:
+		return "Coinbase"
+	}
+	return ""
+}
+
 // KernelFeatures is options for a kernel's structure or use
 type KernelFeatures uint8
 
@@ -39,6 +49,16 @@ const (
 	// Kernel matching a coinbase output
 	CoinbaseKernel KernelFeatures = 1 << 0
 )
+
+func (f KernelFeatures) String() string {
+	switch f {
+	case DefaultKernel:
+		return ""
+	case CoinbaseKernel:
+		return "Coinbase"
+	}
+	return ""
+}
 
 // BlockID identify block by Hash or/and Height (if not nill)
 type BlockID struct {

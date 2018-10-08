@@ -5,7 +5,7 @@
 package secp256k1zkp
 
 import (
-	"fmt"
+	"encoding/hex"
 	"io"
 )
 
@@ -24,8 +24,8 @@ func (c *Commitment) Read(r io.Reader) error {
 }
 
 // String implements String() interface
-func (p Commitment) String() string {
-	return fmt.Sprintf("%#v", p)
+func (c Commitment) String() string {
+	return hex.EncodeToString(c.Bytes())
 }
 
 type RangeProof struct {
@@ -33,4 +33,9 @@ type RangeProof struct {
 	Proof []byte // max size MAX_PROOF_SIZE
 	// The length of the proof
 	ProofLen int
+}
+
+// String implements String() interface
+func (p RangeProof) String() string {
+	return hex.EncodeToString(p.Proof)
 }
