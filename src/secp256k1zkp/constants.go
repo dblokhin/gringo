@@ -21,6 +21,9 @@ const (
 	// The size (in bytes) of a compressed public key
 	CompressedPublicKeySize int = 33
 
+	// The size (in bytes) of an aggregated signature
+	AggSignatureSize int = 64
+
 	// The maximum size of a signature
 	MaxSignatureSize int = 72
 

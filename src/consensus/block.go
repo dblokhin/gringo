@@ -664,13 +664,6 @@ func (k *TxKernel) Bytes() []byte {
 	}
 
 	// Write ExcessSig
-	if len(k.ExcessSig) > secp256k1zkp.MaxSignatureSize {
-		logrus.Fatal(errors.New("invalid excess_sig len"))
-	}
-	if err := binary.Write(buff, binary.BigEndian, uint64(len(k.ExcessSig))); err != nil {
-		logrus.Fatal(err)
-	}
-
 	if _, err := buff.Write(k.ExcessSig); err != nil {
 		logrus.Fatal(err)
 	}
@@ -694,23 +687,12 @@ func (k *TxKernel) Read(r io.Reader) error {
 	}
 
 	// Read Excess
-	commitment := make([]byte, secp256k1zkp.PedersenCommitmentSize)
-	if _, err := io.ReadFull(r, commitment); err != nil {
+	k.Excess = make([]byte, secp256k1zkp.PedersenCommitmentSize)
+	if _, err := io.ReadFull(r, k.Excess); err != nil {
 		return err
 	}
 
-	k.Excess = commitment
-
-	var excessSigLen uint64
-	if err := binary.Read(r, binary.BigEndian, &excessSigLen); err != nil {
-		return err
-	}
-
-	if excessSigLen > uint64(secp256k1zkp.MaxSignatureSize) {
-		return errors.New("invalid excess_sig len")
-	}
-
-	k.ExcessSig = make([]byte, excessSigLen)
+	k.ExcessSig = make([]byte, secp256k1zkp.AggSignatureSize)
 	if _, err := io.ReadFull(r, k.ExcessSig); err != nil {
 		return err
 	}
