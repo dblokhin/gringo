@@ -497,14 +497,11 @@ type Output struct {
 	Features OutputFeatures
 	// The homomorphic commitment representing the output's amount
 	Commit secp256k1zkp.Commitment
-	// The switch commitment hash, a 160 bit length blake2 hash of blind*J
-	SwitchCommitHash SwitchCommitHash
 	// A proof that the commitment is in the right range
 	RangeProof secp256k1zkp.RangeProof
 }
 
-// Bytes implements p2p Message interface
-func (o *Output) Bytes() []byte {
+func (o *Output) BytesWithoutProof() []byte {
 	buff := new(bytes.Buffer)
 
 	// Write features
@@ -521,12 +518,14 @@ func (o *Output) Bytes() []byte {
 		logrus.Fatal(err)
 	}
 
-	// Write SwitchCommitHash
-	if len(o.SwitchCommitHash) != SwitchCommitHashSize {
-		logrus.Fatal(errors.New("invalid input switchCommitHash len"))
-	}
+	return buff.Bytes()
+}
 
-	if _, err := buff.Write(o.SwitchCommitHash); err != nil {
+// Bytes implements p2p Message interface
+func (o *Output) Bytes() []byte {
+	buff := new(bytes.Buffer)
+
+	if _, err := buff.Write(o.BytesWithoutProof()); err != nil {
 		logrus.Fatal(err)
 	}
 
@@ -560,14 +559,6 @@ func (o *Output) Read(r io.Reader) error {
 	}
 
 	o.Commit = commitment
-
-	// Read SwitchCommitHash
-	hash := make([]byte, SwitchCommitHashSize)
-	if _, err := io.ReadFull(r, hash); err != nil {
-		return err
-	}
-
-	o.SwitchCommitHash = hash
 
 	// Read range proof
 	var proofLen uint64 // tha max is MaxProofSize (5134), but in message field it is uint64
