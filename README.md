@@ -1,7 +1,7 @@
 # GRINGO
 Golang (Go) implementation of full Grin (grin network) node.
 
-Development status: frozen.
+Development status: frozen (highly unstable grin's consensus & protocol).
 
 ## The goals
 
