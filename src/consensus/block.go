@@ -5,16 +5,16 @@
 package consensus
 
 import (
-	"io"
-	"time"
 	"bytes"
 	"encoding/binary"
-	"github.com/sirupsen/logrus"
-	"secp256k1zkp"
 	"errors"
-	"golang.org/x/crypto/blake2b"
 	"fmt"
+	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/blake2b"
+	"io"
+	"secp256k1zkp"
 	"sort"
+	"time"
 )
 
 // SwitchCommitHashSize The size to use for the stored blake2 hash of a switch_commitment
@@ -176,12 +176,12 @@ func (b *Block) Hash() Hash {
 func (b *Block) Validate() error {
 	logrus.Info("block scope validate")
 	/*
-	TODO: implement it:
+		TODO: implement it:
 
-	verify_weight()
-	verify_sorted()
-	verify_coinbase()
-	verify_kernels()
+		verify_weight()
+		verify_sorted()
+		verify_coinbase()
+		verify_kernels()
 
 	*/
 
@@ -215,7 +215,7 @@ func (b *Block) verifyCoinbase() error {
 	coinbase := 0
 
 	for _, output := range b.Outputs {
-		if output.Features & CoinbaseOutput == CoinbaseOutput {
+		if output.Features&CoinbaseOutput == CoinbaseOutput {
 			coinbase++
 
 			if coinbase > MaxBlockCoinbaseOutputs {
@@ -239,7 +239,7 @@ func (b *Block) verifyKernels() error {
 	coinbase := 0
 
 	for _, kernel := range b.Kernels {
-		if kernel.Features & CoinbaseKernel == CoinbaseKernel {
+		if kernel.Features&CoinbaseKernel == CoinbaseKernel {
 			coinbase++
 
 			if coinbase > MaxBlockCoinbaseKernels {
@@ -356,7 +356,7 @@ func (b *CompactBlock) Read(r io.Reader) error {
 	// Read counts
 	var (
 		outputs, kernels uint8
-		kernelIDs uint64
+		kernelIDs        uint64
 	)
 
 	if err := binary.Read(r, binary.BigEndian, &outputs); err != nil {
@@ -433,7 +433,6 @@ func (m InputList) Less(i, j int) bool {
 func (m InputList) Swap(i, j int) {
 	m[i], m[j] = m[j], m[i]
 }
-
 
 // Output for a transaction, defining the new ownership of coins that are being
 // transferred. The commitment is a blinded value for the output while the
@@ -896,7 +895,7 @@ func (b *BlockHeader) Validate() error {
 	}
 
 	// refuse blocks more than 12 blocks intervals in future (as in bitcoin)
-	if b.Timestamp.Sub(time.Now().UTC()) > time.Second * 12 * BlockTimeSec {
+	if b.Timestamp.Sub(time.Now().UTC()) > time.Second*12*BlockTimeSec {
 		return fmt.Errorf("invalid block time (%s)", b.Timestamp)
 	}
 

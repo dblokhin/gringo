@@ -17,12 +17,11 @@ const (
 	// MaxMsgLen is the maximum size we're willing to accept for any message. Enforced by the
 	// peer-to-peer networking layer only for DoS protection.
 	MaxMsgLen uint64 = 20000000
-
 )
 
 // Types of p2p messages
 const (
-	MsgTypeError        uint8 = iota
+	MsgTypeError uint8 = iota
 	MsgTypeHand
 	MsgTypeShake
 	MsgTypePing
@@ -60,13 +59,13 @@ const (
 
 const (
 	// Maximum number of hashes in a block header locator request
-	MaxLocators int = 14;
+	MaxLocators int = 14
 
 	// Maximum number of block headers a peer should ever send
-	MaxBlockHeaders = 512;
+	MaxBlockHeaders = 512
 
 	// Maximum number of peer addresses a peer should ever send
-	MaxPeerAddrs = 256;
+	MaxPeerAddrs = 256
 )
 
 // Protocol defines grin-node network communicates

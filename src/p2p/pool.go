@@ -5,13 +5,13 @@
 package p2p
 
 import (
-	"sync"
-	"time"
 	"consensus"
 	"errors"
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"net"
-	"fmt"
+	"sync"
+	"time"
 )
 
 // maxOnlineConnections should be override
@@ -356,7 +356,7 @@ type peerInfo struct {
 type peerStatus int
 
 const (
-	psNew          peerStatus = iota
+	psNew peerStatus = iota
 	psConnected
 	psBanned
 	psDisconnected

@@ -5,13 +5,13 @@
 package consensus
 
 import (
-	"time"
-	"sort"
 	"encoding/binary"
+	"sort"
+	"time"
 )
 
 const (
-	ZeroDifficulty  Difficulty = 0
+	ZeroDifficulty Difficulty = 0
 
 	// The minimum mining difficulty we'll allow
 	MinimumDifficulty Difficulty = 1
@@ -23,6 +23,7 @@ type Difficulty uint64
 func (d Difficulty) FromNum(num uint64) Difficulty {
 	return Difficulty(num)
 }
+
 // FromHash computes the difficulty from a hash. Divides the maximum target by the
 // provided hash.
 func (d Difficulty) FromHash(hash Hash) Difficulty {
@@ -73,7 +74,7 @@ func NextDifficulty(blist BlockList) Difficulty {
 				windowBegin = append(windowBegin, blist[i].Header.Timestamp)
 			}
 		} else {
-			if i < DifficultyAdjustWindow + MedianTimeWindow {
+			if i < DifficultyAdjustWindow+MedianTimeWindow {
 				windowEnd = append(windowEnd, blist[i].Header.Timestamp)
 			} else {
 				break
@@ -94,12 +95,12 @@ func NextDifficulty(blist BlockList) Difficulty {
 		return windowEnd[i].Before(windowEnd[j])
 	})
 
-	beginTime := windowBegin[len(windowBegin) / 2]
-	endTime := windowEnd[len(windowEnd) / 2]
+	beginTime := windowBegin[len(windowBegin)/2]
+	endTime := windowEnd[len(windowEnd)/2]
 
 	// Average difficulty and dampened average time
 	diffAvg := sumDiff / MinimumDifficulty.FromNum(uint64(DifficultyAdjustWindow))
-	ts := (3 * BlockTimeWindow + beginTime.Sub(endTime)) / 4
+	ts := (3*BlockTimeWindow + beginTime.Sub(endTime)) / 4
 
 	// Apply time bounds
 	if ts < LowerTimeBound {

@@ -5,15 +5,15 @@
 package p2p
 
 import (
-	"net"
-	"consensus"
-	"github.com/sirupsen/logrus"
 	"bufio"
-	"io"
+	"consensus"
+	"encoding/hex"
 	"errors"
+	"github.com/sirupsen/logrus"
+	"io"
+	"net"
 	"sync"
 	"sync/atomic"
-	"encoding/hex"
 )
 
 // Peer is a participant of p2p network
@@ -25,8 +25,8 @@ type Peer struct {
 	bytesReceived uint64
 	bytesSent     uint64
 
-	quit      chan struct{}
-	wg        sync.WaitGroup
+	quit chan struct{}
+	wg   sync.WaitGroup
 
 	// Queue for sending message
 	sendQueue chan Message
@@ -156,7 +156,8 @@ out:
 // WriteMessage places msg to send queue
 func (p *Peer) WriteMessage(msg Message) {
 	select {
-	case <-p.quit: logrus.Info("cannot send message, peer is shutting down")
+	case <-p.quit:
+		logrus.Info("cannot send message, peer is shutting down")
 	case p.sendQueue <- msg:
 	}
 }
@@ -224,7 +225,6 @@ out:
 
 			logrus.Infof("received %d peers", len(msg.peers))
 			p.sync.ProcessMessage(p, &msg)
-
 
 		case consensus.MsgTypeGetHeaders:
 			logrus.Infof("receiving header request (%s)", p.conn.RemoteAddr().String())
@@ -301,7 +301,7 @@ out:
 		}
 
 		// update recv bytes counter
-		atomic.AddUint64(&p.bytesReceived, header.Len + consensus.HeaderLen)
+		atomic.AddUint64(&p.bytesReceived, header.Len+consensus.HeaderLen)
 	}
 
 	p.wg.Done()

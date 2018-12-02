@@ -88,7 +88,7 @@ const (
 	MedianTimeWindow int = 11
 
 	// Index at half the desired median
-	MedianTimeIndex	= MedianTimeWindow / 2
+	MedianTimeIndex = MedianTimeWindow / 2
 
 	// Number of blocks used to calculate difficulty adjustments
 	DifficultyAdjustWindow int = 60

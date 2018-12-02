@@ -5,13 +5,13 @@
 package p2p
 
 import (
-	"net"
+	"bytes"
 	"consensus"
 	"encoding/binary"
-	"bytes"
+	"errors"
 	"github.com/sirupsen/logrus"
 	"io"
-	"errors"
+	"net"
 )
 
 // First part of a handshake, sender advertises its version and
@@ -209,7 +209,7 @@ func shakeByHand(conn net.Conn) (*shake, error) {
 
 	receiver := conn.RemoteAddr().(*net.TCPAddr)
 
-	msg := hand {
+	msg := hand{
 		Version:         consensus.ProtocolVersion,
 		Capabilities:    consensus.CapFullNode,
 		Nonce:           serverNonces.NextNonce(),
@@ -249,12 +249,11 @@ func handByShake(conn net.Conn) (*hand, error) {
 	}
 
 	// Send shake
-	msg := shake {
-		Version: consensus.ProtocolVersion,
-		Capabilities: consensus.CapFullNode,
+	msg := shake{
+		Version:         consensus.ProtocolVersion,
+		Capabilities:    consensus.CapFullNode,
 		TotalDifficulty: consensus.Difficulty(1),
-		UserAgent: userAgent,
-
+		UserAgent:       userAgent,
 	}
 	if _, err := WriteMessage(conn, &msg); err != nil {
 		return nil, err

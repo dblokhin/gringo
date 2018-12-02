@@ -5,12 +5,12 @@
 package chain
 
 import (
-	"consensus"
-	"sync"
 	"bytes"
-	"time"
-	"github.com/sirupsen/logrus"
+	"consensus"
 	"errors"
+	"github.com/sirupsen/logrus"
+	"sync"
+	"time"
 )
 
 // Testnet1 genesis block
@@ -125,11 +125,10 @@ func New(genesis *consensus.Block, storage Storage) *Chain {
 		totalDifficulty: genesis.Header.TotalDifficulty,
 	}
 
-
 	// init state from storage
 	// setting up currents: height, total diff & blockHashChain
 	if lastBlock := storage.GetLastBlock(); lastBlock != nil {
-		chain.head	= lastBlock
+		chain.head = lastBlock
 		chain.totalDifficulty = lastBlock.Header.TotalDifficulty
 		chain.height = lastBlock.Header.Height
 	}
@@ -172,12 +171,12 @@ func (c *Chain) GetBlockHeaders(loc consensus.Locator) []consensus.BlockHeader {
 		}
 
 		blockID := consensus.BlockID{
-			Hash: hash,
+			Hash:   hash,
 			Height: nil,
 		}
 
 		// get blocks from
-		blockList := c.storage.From(blockID, consensus.MaxBlockHeaders + 1)
+		blockList := c.storage.From(blockID, consensus.MaxBlockHeaders+1)
 		if len(blockList) > 0 {
 			// pass first block
 			blockList = blockList[1:]
@@ -237,7 +236,7 @@ func (c *Chain) ProcessBlock(block *consensus.Block) error {
 	// Get the previous block
 	prevHeight := block.Header.Height - 1
 	prevBlockID := consensus.BlockID{
-		Hash: block.Header.Previous,
+		Hash:   block.Header.Previous,
 		Height: &prevHeight,
 	}
 	prevBlock := c.storage.GetBlock(prevBlockID)
@@ -258,7 +257,7 @@ func (c *Chain) ProcessBlock(block *consensus.Block) error {
 		return errors.New("invalid block time")
 	}
 	// - block.TotalDiff MUST BE == previous.TotalDiff + previous.POW.ToDifficulty()
-	if block.Header.TotalDifficulty != prevBlock.Header.TotalDifficulty + prevBlock.Header.POW.ToDifficulty() {
+	if block.Header.TotalDifficulty != prevBlock.Header.TotalDifficulty+prevBlock.Header.POW.ToDifficulty() {
 		return errors.New("wrong block total difficulty")
 	}
 	// - check that the difficulty is not less than that calculated by the
@@ -270,7 +269,7 @@ func (c *Chain) ProcessBlock(block *consensus.Block) error {
 	}
 
 	blockID := consensus.BlockID{
-		Hash: nil,
+		Hash:   nil,
 		Height: &fromHeight,
 	}
 

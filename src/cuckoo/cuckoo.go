@@ -5,9 +5,9 @@
 package cuckoo
 
 import (
-	"golang.org/x/crypto/blake2b"
 	"encoding/binary"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/blake2b"
 )
 
 // New returns Cuckoo instance
@@ -73,7 +73,7 @@ func (c *Cuckoo) Verify(nonces []uint32, ease uint64) bool {
 	proof := make([]*Edge, proofSize)
 	for i := 0; i < proofSize; i++ {
 		if uint64(nonces[i]) >= easiness || (i != 0 && nonces[i] <= nonces[i-1]) {
-			return false;
+			return false
 		}
 
 		proof[i] = c.NewEdge(nonces[i])
@@ -81,8 +81,8 @@ func (c *Cuckoo) Verify(nonces []uint32, ease uint64) bool {
 	}
 
 	// Checking edges
-	i := 0		// first node
-	flag := 0	// flag indicates what we need compare U or V
+	i := 0    // first node
+	flag := 0 // flag indicates what we need compare U or V
 	cycle := 0
 
 loop:

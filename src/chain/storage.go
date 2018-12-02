@@ -22,4 +22,3 @@ type Storage interface {
 	// Returns list of blocks from id
 	From(id consensus.BlockID, limit int) consensus.BlockList
 }
-

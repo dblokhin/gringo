@@ -5,13 +5,13 @@
 package consensus
 
 import (
-	"fmt"
 	"bytes"
-	"github.com/sirupsen/logrus"
 	"encoding/binary"
+	"errors"
+	"fmt"
+	"github.com/sirupsen/logrus"
 	"io"
 	"secp256k1zkp"
-	"errors"
 	"sort"
 )
 
@@ -29,7 +29,6 @@ type Transaction struct {
 	// The signature proving the excess is a valid public key, which signs
 	// the transaction fee
 	ExcessSig Hash
-
 }
 
 // Bytes implements p2p Message interface

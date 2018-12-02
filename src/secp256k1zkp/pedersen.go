@@ -5,8 +5,8 @@
 package secp256k1zkp
 
 import (
-	"io"
 	"fmt"
+	"io"
 )
 
 type Commitment []byte

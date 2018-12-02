@@ -5,14 +5,14 @@
 package p2p
 
 import (
-	"io"
-	"encoding/binary"
-	"github.com/sirupsen/logrus"
-	"consensus"
 	"bytes"
-	"net"
+	"consensus"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/sirupsen/logrus"
+	"io"
+	"net"
 )
 
 // Header is header of any protocol message, used to identify incoming messages

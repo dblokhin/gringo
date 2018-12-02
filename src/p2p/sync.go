@@ -68,7 +68,7 @@ type PeersPool interface {
 // Syncer synchronize blockchain & mempool via peers pool
 type Syncer struct {
 	// Chain is a grin blockchain
-	Chain Blockchain
+	Chain   Blockchain
 	Mempool Mempool
 
 	// Pool of peers (peers manager)
@@ -112,7 +112,6 @@ func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
 		peerInfo.Height = msg.Height
 		peerInfo.Unlock()
 
-
 		// send answer
 		var resp Pong
 
@@ -151,7 +150,7 @@ func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
 		// MUST be answered
 		// send answer
 		headers := s.Chain.GetBlockHeaders(msg.Locator)
-		resp := BlockHeaders {
+		resp := BlockHeaders{
 			Headers: headers,
 		}
 

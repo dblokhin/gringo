@@ -5,11 +5,11 @@
 package p2p
 
 import (
-	"io"
-	"net"
-	"github.com/sirupsen/logrus"
 	"encoding/binary"
 	"fmt"
+	"github.com/sirupsen/logrus"
+	"io"
+	"net"
 )
 
 // serializeTCPAddr helps to serialize net.TCPAddr
@@ -37,7 +37,7 @@ func serializeTCPAddr(buff io.Writer, addr *net.TCPAddr) {
 			}
 
 			for i := 0; i < 8; i += 2 {
-				segment := (uint16(IP[i]) << 8) + uint16(IP[i + 1])
+				segment := (uint16(IP[i]) << 8) + uint16(IP[i+1])
 
 				if err := binary.Write(buff, binary.BigEndian, segment); err != nil {
 					logrus.Fatal(err)
@@ -81,7 +81,7 @@ func deserializeTCPAddr(r io.Reader) (*net.TCPAddr, error) {
 			}
 
 			ipAddr[i] = byte(segment >> 8)
-			ipAddr[i + 1] = byte(segment)
+			ipAddr[i+1] = byte(segment)
 		}
 
 	default:
@@ -92,8 +92,8 @@ func deserializeTCPAddr(r io.Reader) (*net.TCPAddr, error) {
 		return nil, err
 	}
 
-	return  &net.TCPAddr{
-		IP: ipAddr,
+	return &net.TCPAddr{
+		IP:   ipAddr,
 		Port: int(ipPort),
 	}, nil
 }

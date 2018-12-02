@@ -34,13 +34,13 @@ func siphash24(v []uint64, nonce uint64) uint64 {
 	round()
 	round()
 
-	v0 ^= nonce;
-	v2 ^= 0xff;
+	v0 ^= nonce
+	v2 ^= 0xff
 
 	round()
 	round()
 	round()
 	round()
 
-	return v0 ^ v1 ^ v2 ^ v3;
+	return v0 ^ v1 ^ v2 ^ v3
 }

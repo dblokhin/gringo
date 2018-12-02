@@ -6,17 +6,17 @@ package consensus
 
 import (
 	"bytes"
-	"github.com/sirupsen/logrus"
+	"cuckoo"
 	"encoding/binary"
 	"errors"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/blake2b"
-	"cuckoo"
 )
 
 // RangeProof of work
-type Proof struct  {
+type Proof struct {
 	// The nonces
- 	Nonces []uint32
+	Nonces []uint32
 }
 
 var (
@@ -66,7 +66,7 @@ func (p *Proof) Bytes() []byte {
 }
 
 func NewProof(nonces []uint32) Proof {
-	return Proof {
+	return Proof{
 		Nonces: nonces,
 	}
 }
