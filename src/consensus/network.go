@@ -40,6 +40,8 @@ const (
 	MsgTypeTxHashSetRequest
 	MsgTypeTxHashSetArchive
 	MsgTypeBanReason
+	MsgTypeGetTransaction
+	MsgTypeTransactionKernel
 )
 
 // Capabilities of node
