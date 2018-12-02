@@ -21,7 +21,7 @@ func TestGenesisHash(t *testing.T) {
 	expected, _ := hex.DecodeString("006642e037a073b89c00f48c93cf1b701b335dab84b538136f63b6feadaa50d6")
 
 	if bytes.Compare(hash, expected) != 0 {
-		t.Errorf("Genesis hash was %x wanted %x. Content:\n%x\n",
+		t.Errorf("Genesis hash was %v wanted %x. Content:\n%x\n",
 			hash, expected, Testnet3.Bytes())
 	}
 }

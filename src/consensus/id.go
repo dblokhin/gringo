@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"github.com/dchest/siphash"
 )
 
@@ -21,7 +22,7 @@ type Hash []byte
 
 // String prints the hexadecimal encoding of the hash.
 func (h Hash) String() string {
-	return hex.EncodeToString(h)
+	return fmt.Sprintf("%032x", []byte(h))
 }
 
 // ShortID returns shortID from Hash
