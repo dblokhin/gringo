@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"github.com/dblokhin/gringo/src/secp256k1zkp"
 	"github.com/sirupsen/logrus"
+	"github.com/yoss22/bulletproofs"
 	"golang.org/x/crypto/blake2b"
 	"io"
 	"sort"
@@ -221,6 +222,10 @@ func (b *Block) Validate() error {
 		return err
 	}
 
+	if err := b.verifyRangeProofs(); err != nil {
+		return err
+	}
+
 	if err := b.verifyKernels(); err != nil {
 		return err
 	}
@@ -290,6 +295,18 @@ func (b *Block) verifySorted() error {
 		return errors.New("block kernels are not sorted")
 	}
 
+	return nil
+}
+
+// verifyRangeProofs returns nil if all outputs have valid range proofs.
+func (b *Block) verifyRangeProofs() error {
+	prover := bulletproofs.NewProver(64)
+	for _, output := range b.Outputs {
+		if !prover.Verify(output.Commit, output.RangeProof) {
+			return fmt.Errorf("proof verification failed for %v %v",
+				output.Commit, output.RangeProof)
+		}
+	}
 	return nil
 }
 
@@ -503,9 +520,9 @@ type Output struct {
 	// Options for an output's structure or use
 	Features OutputFeatures
 	// The homomorphic commitment representing the output's amount
-	Commit secp256k1zkp.Commitment
+	Commit *bulletproofs.Point
 	// A proof that the commitment is in the right range
-	RangeProof secp256k1zkp.RangeProof
+	RangeProof bulletproofs.BulletProof
 }
 
 func (o *Output) BytesWithoutProof() []byte {
@@ -516,12 +533,7 @@ func (o *Output) BytesWithoutProof() []byte {
 		logrus.Fatal(err)
 	}
 
-	// Write commitment
-	if len(o.Commit) != secp256k1zkp.PedersenCommitmentSize {
-		logrus.Fatal(errors.New("invalid input commitment len"))
-	}
-
-	if _, err := buff.Write(o.Commit); err != nil {
+	if _, err := buff.Write(o.Commit.Bytes()); err != nil {
 		logrus.Fatal(err)
 	}
 
@@ -536,16 +548,13 @@ func (o *Output) Bytes() []byte {
 		logrus.Fatal(err)
 	}
 
-	// Write range proof
-	if len(o.RangeProof.Proof) > int(secp256k1zkp.MaxProofSize) || len(o.RangeProof.Proof) != o.RangeProof.ProofLen {
-		logrus.Fatal(errors.New("invalid range proof len"))
-	}
+	proof := o.RangeProof.Bytes()
 
-	if err := binary.Write(buff, binary.BigEndian, uint64(o.RangeProof.ProofLen)); err != nil {
+	if err := binary.Write(buff, binary.BigEndian, len(proof)); err != nil {
 		logrus.Fatal(err)
 	}
 
-	if _, err := buff.Write(o.RangeProof.Proof); err != nil {
+	if _, err := buff.Write(proof); err != nil {
 		logrus.Fatal(err)
 	}
 
@@ -560,12 +569,10 @@ func (o *Output) Read(r io.Reader) error {
 	}
 
 	// Read commitment
-	commitment := make([]byte, secp256k1zkp.PedersenCommitmentSize)
-	if _, err := io.ReadFull(r, commitment); err != nil {
+	o.Commit = new(bulletproofs.Point)
+	if err := o.Commit.Read(r); err != nil {
 		return err
 	}
-
-	o.Commit = commitment
 
 	// Read range proof
 	var proofLen uint64 // tha max is MaxProofSize (5134), but in message field it is uint64
@@ -577,15 +584,12 @@ func (o *Output) Read(r io.Reader) error {
 		return errors.New("invalid range proof len")
 	}
 
-	proof := make([]byte, proofLen)
-	if _, err := io.ReadFull(r, proof); err != nil {
-		return err
+	proof := new(bulletproofs.BulletProof)
+	err := proof.Read(io.LimitReader(r, int64(proofLen)))
+	if err != nil {
+		return errors.New("failed to deserialize range proof")
 	}
-
-	o.RangeProof = secp256k1zkp.RangeProof{
-		Proof:    proof,
-		ProofLen: int(proofLen),
-	}
+	o.RangeProof = *proof
 
 	return nil
 }

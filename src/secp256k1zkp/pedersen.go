@@ -27,15 +27,3 @@ func (c *Commitment) Read(r io.Reader) error {
 func (c Commitment) String() string {
 	return hex.EncodeToString(c.Bytes())
 }
-
-type RangeProof struct {
-	// The proof itself, at most 5134 bytes long
-	Proof []byte // max size MAX_PROOF_SIZE
-	// The length of the proof
-	ProofLen int
-}
-
-// String implements String() interface
-func (p RangeProof) String() string {
-	return hex.EncodeToString(p.Proof)
-}
