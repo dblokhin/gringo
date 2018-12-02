@@ -91,7 +91,7 @@ var Testnet3 = consensus.Block{
 
 		Nonce: 4956988373127691,
 		POW: consensus.Proof{
-			CuckooSizeShift: 30,
+			EdgeBits: 30,
 			Nonces: []uint32{
 				0xa420dc, 0xc8ffee, 0x10e433e, 0x1de9428, 0x2ed4cea, 0x52d907b, 0x5af0e3f,
 				0x6b8fcae, 0x8319b53, 0x845ca8c, 0x8d2a13e, 0x8d6e4cc, 0x9349e8d, 0xa7a33c5,

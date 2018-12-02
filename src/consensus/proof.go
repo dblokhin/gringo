@@ -16,7 +16,7 @@ import (
 // RangeProof of work
 type Proof struct {
 	// Power of 2 used for the size of the cuckoo graph
-	CuckooSizeShift uint8
+	EdgeBits uint8
 
 	// The nonces
 	Nonces []uint32
@@ -57,7 +57,7 @@ func (p *Proof) ProofBytes() []byte {
 	// The solution we serialise depends on the size of the cuckoo graph. The
 	// cycle is always of length 42, but each vertex takes up more bits on
 	// larger graphs, nonceLengthBits is this number of bits.
-	nonceLengthBits := uint(p.CuckooSizeShift) - 1
+	nonceLengthBits := uint(p.EdgeBits) - 1
 
 	// Make a slice just large enough to fit all of the POW bits.
 	bitvecLengthBits := nonceLengthBits * uint(ProofSize)
@@ -87,7 +87,7 @@ func (p *Proof) Bytes() []byte {
 	buff := new(bytes.Buffer)
 
 	// Write size of cuckoo graph.
-	if err := binary.Write(buff, binary.BigEndian, p.CuckooSizeShift); err != nil {
+	if err := binary.Write(buff, binary.BigEndian, p.EdgeBits); err != nil {
 		logrus.Fatal(err)
 	}
 

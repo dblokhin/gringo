@@ -52,11 +52,14 @@ const (
 	// ProofSize Cuckoo-cycle proof size (cycle length)
 	ProofSize int = 42
 
-	// DefaultSizeShift Default Cuckoo Cycle size shift used for mining and validating.
-	DefaultSizeShift uint8 = 30
+	// DefaultMinEdgeBits is the default Cuckatoo Cycle size used for mining and
+	// validating.
+	DefaultMinEdgeBits uint8 = 30
 
-	/// Secondary proof-of-work size shift, meant to be ASIC resistant.
-	SecondPowSizeShift uint8 = 29
+	/// Secondary proof-of-work size, meant to be ASIC resistant.
+	SecondPowEdgeBits uint8 = 29
+
+	BaseEdgeBits uint8 = 24
 
 	// Easiness Default Cuckoo Cycle easiness, high enough to have good likeliness to find
 	// a solution.

@@ -975,17 +975,17 @@ func (b *BlockHeader) Read(r io.Reader) error {
 		return err
 	}
 
-	if err := binary.Read(r, binary.BigEndian, &b.POW.CuckooSizeShift); err != nil {
+	if err := binary.Read(r, binary.BigEndian, &b.POW.EdgeBits); err != nil {
 		return err
 	}
 
-	if b.POW.CuckooSizeShift == 0 || b.POW.CuckooSizeShift > 64 {
+	if b.POW.EdgeBits == 0 || b.POW.EdgeBits > 64 {
 		return errors.New("Invalid cuckoo graph size")
 	}
 
 	b.POW.Nonces = make([]uint32, ProofSize)
 
-	nonceLengthBits := uint(b.POW.CuckooSizeShift) - 1
+	nonceLengthBits := uint(b.POW.EdgeBits) - 1
 
 	// Make a slice just large enough to fit all of the POW bits.
 	bitvecLengthBits := nonceLengthBits * uint(ProofSize)
@@ -1036,12 +1036,12 @@ func (b *BlockHeader) Validate() error {
 	}
 
 	// Check POW
-	isPrimaryPow := b.POW.CuckooSizeShift != SecondPowSizeShift
+	isPrimaryPow := b.POW.EdgeBits != SecondPowEdgeBits
 
 	// Either the size shift must be a valid primary POW (greater than the
 	// minimum size shift) or equal to the secondary POW size shift.
-	if b.POW.CuckooSizeShift < DefaultSizeShift && isPrimaryPow {
-		return fmt.Errorf("Cuckoo size too small: %d", b.POW.CuckooSizeShift)
+	if b.POW.EdgeBits < DefaultMinEdgeBits && isPrimaryPow {
+		return fmt.Errorf("Cuckoo size too small: %d", b.POW.EdgeBits)
 	}
 
 	// The primary POW must have a scaling factor of 1.
@@ -1049,7 +1049,7 @@ func (b *BlockHeader) Validate() error {
 		return fmt.Errorf("Invalid scaling difficulty: %d", b.ScalingDifficulty)
 	}
 
-	if err := b.POW.Validate(b, b.POW.CuckooSizeShift); err != nil {
+	if err := b.POW.Validate(b, b.POW.EdgeBits); err != nil {
 		return err
 	}
 

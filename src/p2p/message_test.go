@@ -105,7 +105,7 @@ func TestHeaderParsing(t *testing.T) {
 		}
 	}
 
-	if blockHeader.Header.POW.CuckooSizeShift != 30 {
+	if blockHeader.Header.POW.EdgeBits != 30 {
 		t.Error("Incorrect cuckoo size")
 	}
 

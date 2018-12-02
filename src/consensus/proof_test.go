@@ -46,7 +46,7 @@ func TestValidProof(t *testing.T) {
 		OutputMmrSize: 0x443a9,
 		KernelMmrSize: 0x4010e,
 		POW: Proof{
-			CuckooSizeShift: 0x1e,
+			EdgeBits: 0x1e,
 			Nonces: []uint32{
 				0x7a5129, 0xaed072, 0x23474bb, 0x2354065, 0x285a90e,
 				0x3907c82, 0x3af3e1b, 0x3d3b1b1, 0x4128e08, 0x4cff857,
