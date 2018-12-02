@@ -76,7 +76,7 @@ func (h *Header) Read(r io.Reader) error {
 
 // validateMagic verifies magic code
 func (h Header) validateMagic() bool {
-	return h.magic[0] == 0x1e && h.magic[1] == 0xc5
+	return bytes.Equal(h.magic[:], consensus.MagicCode[:])
 }
 
 // Ping request
