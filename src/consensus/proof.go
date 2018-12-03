@@ -57,7 +57,7 @@ func (p *Proof) ProofBytes() []byte {
 	// The solution we serialise depends on the size of the cuckoo graph. The
 	// cycle is always of length 42, but each vertex takes up more bits on
 	// larger graphs, nonceLengthBits is this number of bits.
-	nonceLengthBits := uint(p.EdgeBits) - 1
+	nonceLengthBits := uint(p.EdgeBits)
 
 	// Make a slice just large enough to fit all of the POW bits.
 	bitvecLengthBits := nonceLengthBits * uint(ProofSize)

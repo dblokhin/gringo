@@ -1030,10 +1030,7 @@ func (b *BlockHeader) Validate() error {
 		return fmt.Errorf("invalid block time (%s)", b.Timestamp)
 	}
 
-	// Check Difficulty
-	if b.Difficulty < MinimumDifficulty {
-		return errors.New("block difficulty is less than minimal")
-	}
+	// TODO: Check difficulty.
 
 	// Check POW
 	isPrimaryPow := b.POW.EdgeBits != SecondPowEdgeBits

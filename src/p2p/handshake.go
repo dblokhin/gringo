@@ -246,7 +246,7 @@ func shakeByHand(conn net.Conn) (*shake, error) {
 		SenderAddr:      sender,
 		ReceiverAddr:    receiver,
 		UserAgent:       userAgent,
-		Genesis:         chain.Testnet3.Hash(),
+		Genesis:         chain.Testnet4.Hash(),
 	}
 
 	// Send own hand

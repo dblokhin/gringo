@@ -17,11 +17,11 @@ func TestSerialiseProof(t *testing.T) {
 }
 
 func TestGenesisHash(t *testing.T) {
-	hash := Testnet3.Hash()
-	expected, _ := hex.DecodeString("006642e037a073b89c00f48c93cf1b701b335dab84b538136f63b6feadaa50d6")
+	hash := Testnet4.Hash()
+	expected, _ := hex.DecodeString("0644cedb1acfdde4ee9e135ae61de3cbeb301b5f27a40a2c366da8e724292f20")
 
 	if bytes.Compare(hash, expected) != 0 {
 		t.Errorf("Genesis hash was %v wanted %x. Content:\n%x\n",
-			hash, expected, Testnet3.Bytes())
+			hash, expected, Testnet4.Bytes())
 	}
 }
