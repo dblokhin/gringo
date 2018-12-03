@@ -581,7 +581,7 @@ func (o *Output) Read(r io.Reader) error {
 	}
 
 	if proofLen > uint64(secp256k1zkp.MaxProofSize) {
-		return errors.New("invalid range proof len")
+		return fmt.Errorf("invalid range proof length: %d", proofLen)
 	}
 
 	proof := new(bulletproofs.BulletProof)
