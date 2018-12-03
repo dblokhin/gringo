@@ -153,6 +153,17 @@ func (b *Block) Read(r io.Reader) error {
 		return err
 	}
 
+	// Sanity check the lengths.
+	if inputs > 1000000 {
+		return errors.New("transaction contains too many inputs")
+	}
+	if outputs > 1000000 {
+		return errors.New("transaction contains too many outputs")
+	}
+	if kernels > 1000000 {
+		return errors.New("transaction contains too many kernels")
+	}
+
 	// Read inputs
 	b.Inputs = make([]Input, inputs)
 	for i := uint64(0); i < inputs; i++ {
@@ -754,6 +765,8 @@ type BlockHeader struct {
 	Height uint64
 	// Hash of the block previous to this in the chain
 	Previous Hash
+	// Root hash of the previous header MMR.
+	PreviousRoot Hash
 	// Timestamp at which the block was built
 	Timestamp time.Time
 	// UTXORoot Merklish root of all the commitments in the UTXO set
@@ -781,7 +794,7 @@ type BlockHeader struct {
 	// Total accumulated difficulty since genesis block
 	TotalDifficulty Difficulty
 	// Difficulty scaling factor between the different proofs of work
-	ScalingDifficulty Difficulty
+	ScalingDifficulty uint32
 }
 
 // Hash is a hash based on the blocks proof of work.
@@ -901,12 +914,6 @@ func (b *BlockHeader) Read(r io.Reader) error {
 		return err
 	}
 
-	// Read prev blockhash
-	b.Previous = make([]byte, BlockHashSize)
-	if _, err := io.ReadFull(r, b.Previous); err != nil {
-		return err
-	}
-
 	// Read timestamp
 	var ts int64
 	if err := binary.Read(r, binary.BigEndian, &ts); err != nil {
@@ -916,10 +923,15 @@ func (b *BlockHeader) Read(r io.Reader) error {
 	// FIXME: Check timestamp is in correct range.
 	b.Timestamp = time.Unix(ts, 0).UTC()
 
-	if b.Version == 1 {
-		if err := binary.Read(r, binary.BigEndian, &b.TotalDifficulty); err != nil {
-			return err
-		}
+	// Read prev blockhash
+	b.Previous = make([]byte, BlockHashSize)
+	if _, err := io.ReadFull(r, b.Previous); err != nil {
+		return err
+	}
+
+	b.PreviousRoot = make([]byte, BlockHashSize)
+	if _, err := io.ReadFull(r, b.PreviousRoot); err != nil {
+		return err
 	}
 
 	// Read UTXORoot, RangeProofRoot, KernelRoot
@@ -943,11 +955,6 @@ func (b *BlockHeader) Read(r io.Reader) error {
 		return err
 	}
 
-	b.TotalKernelSum = make([]byte, secp256k1zkp.PedersenCommitmentSize)
-	if _, err := io.ReadFull(r, b.TotalKernelSum); err != nil {
-		return err
-	}
-
 	if err := binary.Read(r, binary.BigEndian, &b.OutputMmrSize); err != nil {
 		return err
 	}
@@ -957,17 +964,12 @@ func (b *BlockHeader) Read(r io.Reader) error {
 	}
 
 	// Read the proof of work.
+	if err := binary.Read(r, binary.BigEndian, &b.TotalDifficulty); err != nil {
+		return err
+	}
 
-	if b.Version != 1 {
-		if err := binary.Read(r, binary.BigEndian, &b.TotalDifficulty); err != nil {
-			return err
-		}
-
-		if err := binary.Read(r, binary.BigEndian, &b.ScalingDifficulty); err != nil {
-			return err
-		}
-	} else {
-		b.ScalingDifficulty = 1
+	if err := binary.Read(r, binary.BigEndian, &b.ScalingDifficulty); err != nil {
+		return err
 	}
 
 	// Read nonce
@@ -980,12 +982,12 @@ func (b *BlockHeader) Read(r io.Reader) error {
 	}
 
 	if b.POW.EdgeBits == 0 || b.POW.EdgeBits > 64 {
-		return errors.New("Invalid cuckoo graph size")
+		return fmt.Errorf("invalid cuckoo graph size: %d", b.POW.EdgeBits)
 	}
 
 	b.POW.Nonces = make([]uint32, ProofSize)
 
-	nonceLengthBits := uint(b.POW.EdgeBits) - 1
+	nonceLengthBits := uint(b.POW.EdgeBits)
 
 	// Make a slice just large enough to fit all of the POW bits.
 	bitvecLengthBits := nonceLengthBits * uint(ProofSize)
@@ -1038,12 +1040,12 @@ func (b *BlockHeader) Validate() error {
 	// Either the size shift must be a valid primary POW (greater than the
 	// minimum size shift) or equal to the secondary POW size shift.
 	if b.POW.EdgeBits < DefaultMinEdgeBits && isPrimaryPow {
-		return fmt.Errorf("Cuckoo size too small: %d", b.POW.EdgeBits)
+		return fmt.Errorf("cuckoo size too small: %d", b.POW.EdgeBits)
 	}
 
 	// The primary POW must have a scaling factor of 1.
 	if isPrimaryPow && b.ScalingDifficulty != 1 {
-		return fmt.Errorf("Invalid scaling difficulty: %d", b.ScalingDifficulty)
+		return fmt.Errorf("invalid scaling difficulty: %d", b.ScalingDifficulty)
 	}
 
 	if err := b.POW.Validate(b, b.POW.EdgeBits); err != nil {
