@@ -8,9 +8,11 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"github.com/dblokhin/gringo/src/cuckoo"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/blake2b"
+	"io"
 )
 
 // RangeProof of work
@@ -94,6 +96,46 @@ func (p *Proof) Bytes() []byte {
 	buff.Write(p.ProofBytes())
 
 	return buff.Bytes()
+}
+
+// Read deserializes a Proof.
+func (p *Proof) Read(r io.Reader) error {
+	if err := binary.Read(r, binary.BigEndian, &p.EdgeBits); err != nil {
+		return err
+	}
+
+	if p.EdgeBits == 0 || p.EdgeBits > 64 {
+		return fmt.Errorf("invalid cuckoo graph size: %d", p.EdgeBits)
+	}
+
+	p.Nonces = make([]uint32, ProofSize)
+
+	nonceLengthBits := uint(p.EdgeBits)
+
+	// Make a slice just large enough to fit all of the POW bits.
+	bitvecLengthBits := nonceLengthBits * uint(ProofSize)
+	bitvec := make([]uint8, (bitvecLengthBits+7)/8)
+	if _, err := io.ReadFull(r, bitvec); err != nil {
+		return err
+	}
+
+	for i := 0; i < ProofSize; i++ {
+		var nonce uint32
+
+		// Read this nonce from the packed bitstream.
+		for bit := uint(0); bit < nonceLengthBits; bit++ {
+			// Find the position of this bit in bitvec
+			offsetBits := uint(i)*nonceLengthBits + bit
+			// If this bit is set in bitvec then set the same bit in the nonce.
+			if bitvec[offsetBits/8]&(1<<(offsetBits%8)) != 0 {
+				nonce |= 1 << bit
+			}
+		}
+
+		p.Nonces[i] = nonce
+	}
+
+	return nil
 }
 
 func NewProof(nonces []uint32) Proof {

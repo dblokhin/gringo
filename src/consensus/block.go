@@ -959,7 +959,6 @@ func (b *BlockHeader) Read(r io.Reader) error {
 		return err
 	}
 
-	// Read the proof of work.
 	if err := binary.Read(r, binary.BigEndian, &b.TotalDifficulty); err != nil {
 		return err
 	}
@@ -968,47 +967,12 @@ func (b *BlockHeader) Read(r io.Reader) error {
 		return err
 	}
 
-	// Read nonce
 	if err := binary.Read(r, binary.BigEndian, &b.Nonce); err != nil {
 		return err
 	}
 
-	if err := binary.Read(r, binary.BigEndian, &b.POW.EdgeBits); err != nil {
+	if err := b.POW.Read(r); err != nil {
 		return err
-	}
-
-	if b.POW.EdgeBits == 0 || b.POW.EdgeBits > 64 {
-		return fmt.Errorf("invalid cuckoo graph size: %d", b.POW.EdgeBits)
-	}
-
-	b.POW.Nonces = make([]uint32, ProofSize)
-
-	nonceLengthBits := uint(b.POW.EdgeBits)
-
-	// Make a slice just large enough to fit all of the POW bits.
-	bitvecLengthBits := nonceLengthBits * uint(ProofSize)
-	bitvec := make([]uint8, (bitvecLengthBits+7)/8)
-
-	// TODO: Clean this up.
-
-	if _, err := io.ReadFull(r, bitvec); err != nil {
-		return err
-	}
-
-	for i := 0; i < ProofSize; i++ {
-		var nonce uint32
-
-		// Read this nonce from the packed bitstream.
-		for bit := uint(0); bit < nonceLengthBits; bit++ {
-			// Find the position of this bit in bitvec
-			offsetBits := uint(i)*nonceLengthBits + bit
-			// If this bit is set in bitvec then set the same bit in the nonce.
-			if bitvec[offsetBits/8]&(1<<(offsetBits%8)) != 0 {
-				nonce |= 1 << bit
-			}
-		}
-
-		b.POW.Nonces[i] = nonce
 	}
 
 	return nil
