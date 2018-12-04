@@ -52,10 +52,28 @@ func TestValidSolution(t *testing.T) {
 	}
 }
 
-func TestShouldFindCycle(t *testing.T) {
-	header := []byte{49}
-	cuckoo := New(header, 20)
+func TestValidSolutionCuckaroo(t *testing.T) {
+	key := [4]uint64{
+		0x23796193872092ea,
+		0xf1017d8a68c4b745,
+		0xd312bd53d2cd307b,
+		0x840acce5833ddc52,
+	}
+	expected := []uint32{
+		0x45e9, 0x6a59, 0xf1ad, 0x10ef7, 0x129e8, 0x13e58, 0x17936, 0x19f7f, 0x208df, 0x23704,
+		0x24564, 0x27e64, 0x2b828, 0x2bb41, 0x2ffc0, 0x304c5, 0x31f2a, 0x347de, 0x39686, 0x3ab6c,
+		0x429ad, 0x45254, 0x49200, 0x4f8f8, 0x5697f, 0x57ad1, 0x5dd47, 0x607f8, 0x66199, 0x686c7,
+		0x6d5f3, 0x6da7a, 0x6dbdf, 0x6f6bf, 0x6ffbb, 0x7580e, 0x78594, 0x785ac, 0x78b1d, 0x7b80d,
+		0x7c11c, 0x7da35,
+	}
 
+	cuckoo := NewFromKeys(key)
+	if !cuckoo.Verify(expected, 19) {
+		t.Error("Verify failed")
+	}
+}
+
+func TestShouldFindCycle(t *testing.T) {
 	// Construct the example graph in figure 1 of the cuckoo cycle paper. The
 	// cycle is: 8 -> 9 -> 4 -> 13 -> 10 -> 5 -> 8.
 
@@ -67,14 +85,12 @@ func TestShouldFindCycle(t *testing.T) {
 	edges[4] = &Edge{U: 8, V: 9}
 	edges[5] = &Edge{U: 10, V: 13}
 
-	if cuckoo.findCycleLength(edges) != 6 {
+	if findCycleLength(edges) != 6 {
 		t.Error("Verify failed")
 	}
 }
 
 func TestShouldNotFindCycle(t *testing.T) {
-	cuckoo := New([]byte{49}, 20)
-
 	// Construct a path that isn't closed
 	// 2 -> 5 -> 4 -> 9 -> 8 -> 11 -> 10
 
@@ -86,15 +102,13 @@ func TestShouldNotFindCycle(t *testing.T) {
 	edges[4] = &Edge{U: 8, V: 11}
 	edges[5] = &Edge{U: 11, V: 10}
 
-	cycle := cuckoo.findCycleLength(edges)
+	cycle := findCycleLength(edges)
 	if cycle != 0 {
 		t.Errorf("Verify failed, found unexpected %d-cycle", cycle)
 	}
 }
 
 func TestShouldNotFindCycleNotBipartite(t *testing.T) {
-	cuckoo := New([]byte{49}, 20)
-
 	// Construct a length 3 cycle that implies a non-bipartite graph.
 	// 2 -> 4 -> 5 -> 2
 
@@ -103,7 +117,7 @@ func TestShouldNotFindCycleNotBipartite(t *testing.T) {
 	edges[1] = &Edge{U: 4, V: 5}
 	edges[2] = &Edge{U: 5, V: 2}
 
-	cycle := cuckoo.findCycleLength(edges)
+	cycle := findCycleLength(edges)
 	if cycle != 0 {
 		t.Errorf("Verify failed, found unexpected %d-cycle", cycle)
 	}
