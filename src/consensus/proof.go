@@ -32,8 +32,8 @@ var (
 func (p *Proof) Validate(header *BlockHeader, cuckooSize uint8) error {
 	logrus.Infof("block POW validate for size %d", cuckooSize)
 
-	cuckoo := cuckoo.New(header.bytesWithoutPOW(), cuckooSize)
-	if cuckoo.Verify(header.POW.Nonces, Easiness) {
+	cuckoo := cuckoo.NewCuckaroo(header.bytesWithoutPOW())
+	if cuckoo.Verify(header.POW.Nonces, header.POW.EdgeBits) {
 		return nil
 	}
 
