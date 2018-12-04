@@ -4,20 +4,34 @@
 
 package cuckoo
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestSum(t *testing.T) {
-	if siphash24([]uint64{1, 2, 3, 4}, 10) != uint64(928382149599306901) {
+	if siphash24([4]uint64{1, 2, 3, 4}, 10) != uint64(928382149599306901) {
 		t.Errorf("siphash24 was incorrect, want: %d.", uint64(928382149599306901))
 	}
-	if siphash24([]uint64{1, 2, 3, 4}, 111) != uint64(10524991083049122233) {
+	if siphash24([4]uint64{1, 2, 3, 4}, 111) != uint64(10524991083049122233) {
 		t.Errorf("siphash24 was incorrect, want: %d.", uint64(10524991083049122233))
 	}
-	if siphash24([]uint64{9, 7, 6, 7}, 12) != uint64(1305683875471634734) {
+	if siphash24([4]uint64{9, 7, 6, 7}, 12) != uint64(1305683875471634734) {
 		t.Errorf("siphash24 was incorrect, want: %d.", uint64(1305683875471634734))
 	}
-	if siphash24([]uint64{9, 7, 6, 7}, 10) != uint64(11589833042187638814) {
+	if siphash24([4]uint64{9, 7, 6, 7}, 10) != uint64(11589833042187638814) {
 		t.Errorf("siphash24 was incorrect, want: %d.", uint64(11589833042187638814))
+	}
+}
+
+func TestBlock(t *testing.T) {
+	if siphashBlock([4]uint64{1, 2, 3, 4}, 10) != uint64(1182162244994096396) {
+		t.Errorf("siphashBlock was incorrect, want: %d.", uint64(1182162244994096396))
+	}
+	if siphashBlock([4]uint64{1, 2, 3, 4}, 123) != uint64(11303676240481718781) {
+		t.Errorf("siphashBlock was incorrect, want: %d.", uint64(11303676240481718781))
+	}
+	if siphashBlock([4]uint64{9, 7, 6, 7}, 12) != uint64(4886136884237259030) {
+		t.Errorf("siphashBlock was incorrect, want: %d.", uint64(4886136884237259030))
 	}
 }
 

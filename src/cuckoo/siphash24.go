@@ -4,43 +4,95 @@
 
 package cuckoo
 
-// siphash adopted RFC siphash24 for Cuckoo
-func siphash24(v []uint64, nonce uint64) uint64 {
-	v0 := v[0]
-	v1 := v[1]
-	v2 := v[2]
-	v3 := v[3] ^ nonce
+const (
+	siphashBlockBits = uint64(6)
+	siphashBlockSize = uint64(1 << siphashBlockBits)
+	siphashBlockMask = uint64(siphashBlockSize - 1)
+)
+
+// SipHash24 is an implementation of the siphash 2-4 keyed hash function by
+// Jean-Philippe Aumasson and Daniel J. Bernstein.
+type SipHash24 struct {
+	// v is the current internal state.
+	v [4]uint64
+}
+
+// NewSipHash24 returns a new instance of a SipHash24 hasher with the key v.
+func NewSipHash24(v [4]uint64) SipHash24 {
+	return SipHash24{
+		v: v,
+	}
+}
+
+// Sum64 outputs a 64-bit hash.
+func (h *SipHash24) Sum64() uint64 {
+	return h.v[0] ^ h.v[1] ^ h.v[2] ^ h.v[3]
+}
+
+// Write64 computes two, then four rounds of hashing.
+func (h *SipHash24) Write64(nonce uint64) {
+	h.v[3] ^= nonce
 
 	round := func() {
-		v0 += v1
-		v1 = v1<<13 | v1>>(64-13)
-		v1 ^= v0
-		v0 = v0<<32 | v0>>(64-32)
+		h.v[0] += h.v[1]
+		h.v[1] = h.v[1]<<13 | h.v[1]>>(64-13)
+		h.v[1] ^= h.v[0]
+		h.v[0] = h.v[0]<<32 | h.v[0]>>(64-32)
 
-		v2 += v3
-		v3 = v3<<16 | v3>>(64-16)
-		v3 ^= v2
+		h.v[2] += h.v[3]
+		h.v[3] = h.v[3]<<16 | h.v[3]>>(64-16)
+		h.v[3] ^= h.v[2]
 
-		v0 += v3
-		v3 = v3<<21 | v3>>(64-21)
-		v3 ^= v0
+		h.v[0] += h.v[3]
+		h.v[3] = h.v[3]<<21 | h.v[3]>>(64-21)
+		h.v[3] ^= h.v[0]
 
-		v2 += v1
-		v1 = v1<<17 | v1>>(64-17)
-		v1 ^= v2
-		v2 = v2<<32 | v2>>(64-32)
+		h.v[2] += h.v[1]
+		h.v[1] = h.v[1]<<17 | h.v[1]>>(64-17)
+		h.v[1] ^= h.v[2]
+		h.v[2] = h.v[2]<<32 | h.v[2]>>(64-32)
 	}
 
 	round()
 	round()
 
-	v0 ^= nonce
-	v2 ^= 0xff
+	h.v[0] ^= nonce
+	h.v[2] ^= 0xff
 
 	round()
 	round()
 	round()
 	round()
+}
 
-	return v0 ^ v1 ^ v2 ^ v3
+// siphash24 computes a single siphash digest using the key v and a nonce.
+func siphash24(v [4]uint64, nonce uint64) uint64 {
+	h := NewSipHash24(v)
+	h.Write64(nonce)
+	return h.Sum64()
+}
+
+// siphashBlock computes a block of hashes of size siphashBlockSize.
+func siphashBlock(v [4]uint64, nonce uint64) uint64 {
+	siphash := NewSipHash24(v)
+
+	// Find the start of the block that contains nonce.
+	start := nonce &^ siphashBlockMask
+
+	// Repeatedly hash from the start of the block to the end.
+	var nonceHash uint64
+	for n := start; n < start+siphashBlockSize; n++ {
+		siphash.Write64(n)
+		if n == nonce {
+			nonceHash = siphash.Sum64()
+		}
+	}
+
+	// Ensure the whole block of hashes has actually been calculated by xor-ing
+	// the final state with nonceHash.
+	if nonce == start+siphashBlockMask {
+		return siphash.Sum64()
+	} else {
+		return nonceHash ^ siphash.Sum64()
+	}
 }

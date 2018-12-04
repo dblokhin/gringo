@@ -17,7 +17,7 @@ func New(key []byte, sizeShift uint8) *Cuckoo {
 	bsum := blake2b.Sum256(key)
 	key = bsum[:]
 
-	v := make([]uint64, 4)
+	var v [4]uint64
 	v[0] = binary.LittleEndian.Uint64(key[:8])
 	v[1] = binary.LittleEndian.Uint64(key[8:16])
 	v[2] = binary.LittleEndian.Uint64(key[16:24])
@@ -49,7 +49,7 @@ type Cuckoo struct {
 	size uint64
 
 	// v is the key for siphash
-	v []uint64
+	v [4]uint64
 }
 
 func (c *Cuckoo) newNode(nonce uint64, i uint64) uint64 {
