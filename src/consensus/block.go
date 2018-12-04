@@ -561,7 +561,7 @@ func (o *Output) Bytes() []byte {
 
 	proof := o.RangeProof.Bytes()
 
-	if err := binary.Write(buff, binary.BigEndian, len(proof)); err != nil {
+	if err := binary.Write(buff, binary.BigEndian, uint64(len(proof))); err != nil {
 		logrus.Fatal(err)
 	}
 
@@ -817,6 +817,11 @@ func (b *BlockHeader) bytesWithoutPOW() []byte {
 		logrus.Fatal(err)
 	}
 
+	// Write timestamp
+	if err := binary.Write(buff, binary.BigEndian, b.Timestamp.Unix()); err != nil {
+		logrus.Fatal(err)
+	}
+
 	// Write prev blockhash
 	if len(b.Previous) != BlockHashSize {
 		logrus.Fatal(errors.New("invalid previous block hash len"))
@@ -826,15 +831,12 @@ func (b *BlockHeader) bytesWithoutPOW() []byte {
 		logrus.Fatal(err)
 	}
 
-	// Write timestamp
-	if err := binary.Write(buff, binary.BigEndian, b.Timestamp.Unix()); err != nil {
-		logrus.Fatal(err)
+	if len(b.PreviousRoot) != BlockHashSize {
+		logrus.Fatal(errors.New("invalid previous root hash len"))
 	}
 
-	if b.Version == 1 {
-		if err := binary.Write(buff, binary.BigEndian, uint64(b.TotalDifficulty)); err != nil {
-			logrus.Fatal(err)
-		}
+	if _, err := buff.Write(b.PreviousRoot); err != nil {
+		logrus.Fatal(err)
 	}
 
 	// Write UTXORoot, RangeProofRoot, KernelRoot
@@ -860,10 +862,6 @@ func (b *BlockHeader) bytesWithoutPOW() []byte {
 		logrus.Fatal(err)
 	}
 
-	if _, err := buff.Write(b.TotalKernelSum); err != nil {
-		logrus.Fatal(err)
-	}
-
 	if err := binary.Write(buff, binary.BigEndian, b.OutputMmrSize); err != nil {
 		logrus.Fatal(err)
 	}
@@ -872,14 +870,12 @@ func (b *BlockHeader) bytesWithoutPOW() []byte {
 		logrus.Fatal(err)
 	}
 
-	if b.Version > 1 {
-		if err := binary.Write(buff, binary.BigEndian, uint64(b.TotalDifficulty)); err != nil {
-			logrus.Fatal(err)
-		}
+	if err := binary.Write(buff, binary.BigEndian, uint64(b.TotalDifficulty)); err != nil {
+		logrus.Fatal(err)
+	}
 
-		if err := binary.Write(buff, binary.BigEndian, uint64(b.ScalingDifficulty)); err != nil {
-			logrus.Fatal(err)
-		}
+	if err := binary.Write(buff, binary.BigEndian, b.ScalingDifficulty); err != nil {
+		logrus.Fatal(err)
 	}
 
 	// Write nonce

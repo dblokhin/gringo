@@ -30,9 +30,11 @@ func TestBlockSerialize(t *testing.T) {
 	}
 
 	actual := block.Bytes()
-
-	if !bytes.Equal(serialisedBlock, actual) {
-		t.Errorf("TestBlockSerialize failed: got %x, expected %x", actual,
-			serialisedBlock)
+	for i := range serialisedBlock {
+		if serialisedBlock[i] != actual[i] {
+			t.Errorf("TestBlockSerialize failed: mismatch at byte %d, got\n%x"+
+				", expected\n%x", i, actual, serialisedBlock)
+			break
+		}
 	}
 }
