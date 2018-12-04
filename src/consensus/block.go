@@ -214,7 +214,7 @@ func (b *Block) Validate() error {
 
 	*/
 
-	// validate header
+	// Validate header and proof-of-work.
 	if err := b.Header.Validate(); err != nil {
 		return err
 	}
@@ -233,6 +233,7 @@ func (b *Block) Validate() error {
 		return err
 	}
 
+	// Verify all output values are within the correct range.
 	if err := b.verifyRangeProofs(); err != nil {
 		return err
 	}
@@ -311,6 +312,7 @@ func (b *Block) verifySorted() error {
 
 // verifyRangeProofs returns nil if all outputs have valid range proofs.
 func (b *Block) verifyRangeProofs() error {
+	// TODO(yoss22): Batch verify these.
 	prover := bulletproofs.NewProver(64)
 	for _, output := range b.Outputs {
 		if !prover.Verify(output.Commit, output.RangeProof) {
