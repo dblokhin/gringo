@@ -287,6 +287,8 @@ func (b *Block) verifyKernels() error {
 		}
 	}
 
+	// TODO: Verify that the kernel sums are correct.
+
 	// Check the roots
 	// TODO: do that
 
@@ -658,10 +660,10 @@ type TxKernel struct {
 	// Remainder of the sum of all transaction commitments. If the transaction
 	// is well formed, amounts components should sum to zero and the excess
 	// is hence a valid public key.
-	Excess secp256k1zkp.Commitment
+	Excess bulletproofs.Point
 	// The signature proving the excess is a valid public key, which signs
 	// the transaction fee.
-	ExcessSig Hash
+	ExcessSig [64]byte
 }
 
 // Hash returns a hash of the serialised kernel.
@@ -688,16 +690,12 @@ func (k *TxKernel) Bytes() []byte {
 	}
 
 	// Write Excess
-	if len(k.Excess) != secp256k1zkp.PedersenCommitmentSize {
-		logrus.Fatal(errors.New("invalid excess len"))
-	}
-
-	if _, err := buff.Write(k.Excess); err != nil {
+	if _, err := buff.Write(k.Excess.Bytes()); err != nil {
 		logrus.Fatal(err)
 	}
 
 	// Write ExcessSig
-	if _, err := buff.Write(k.ExcessSig); err != nil {
+	if _, err := buff.Write(k.ExcessSig[:]); err != nil {
 		logrus.Fatal(err)
 	}
 
@@ -720,21 +718,35 @@ func (k *TxKernel) Read(r io.Reader) error {
 	}
 
 	// Read Excess
-	k.Excess = make([]byte, secp256k1zkp.PedersenCommitmentSize)
-	if _, err := io.ReadFull(r, k.Excess); err != nil {
+	if err := k.Excess.Read(r); err != nil {
 		return err
 	}
 
-	k.ExcessSig = make([]byte, secp256k1zkp.AggSignatureSize)
-	if _, err := io.ReadFull(r, k.ExcessSig); err != nil {
+	if _, err := io.ReadFull(r, k.ExcessSig[:]); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// Validate returns nil if kernel successfully passed consensus rules
+var ErrInvalidSignature = errors.New("signature isn't valid")
+
+// Validate returns nil if kernel successfully passed consensus rules.
 func (o *TxKernel) Validate() error {
+	// The spender signs the fee and lock height using the private key for P. If
+	// the signature verifies then we know that there is no residue on G (i.e.
+	// that no value is created) and that the spender is in possession of the
+	// inputs.
+	msg := secp256k1zkp.ComputeMessage(o.Fee, o.LockHeight)
+	signature := secp256k1zkp.DecodeSignature(o.ExcessSig)
+
+	// Excess is a Pedersen commitment to the value zero: P = γ*H + 0*G
+	P := o.Excess
+
+	if !secp256k1zkp.VerifySignature(P, msg, signature) {
+		return ErrInvalidSignature
+	}
+
 	return nil
 }
 

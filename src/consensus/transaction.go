@@ -17,7 +17,7 @@ import (
 // Transaction an grin transaction
 type Transaction struct {
 	// The "k2" kernel offset.
-	KernelOffset Hash
+	KernelOffset [32]byte
 	// Set of inputs spent by the transaction
 	Inputs InputList
 	// Set of outputs the transaction produces
@@ -30,7 +30,7 @@ type Transaction struct {
 func (t *Transaction) Bytes() []byte {
 	buff := new(bytes.Buffer)
 
-	if _, err := buff.Write(t.KernelOffset); err != nil {
+	if _, err := buff.Write(t.KernelOffset[:]); err != nil {
 		logrus.Fatal(err)
 	}
 
@@ -84,8 +84,7 @@ func (t *Transaction) Type() uint8 {
 
 // Read implements p2p Message interface
 func (t *Transaction) Read(r io.Reader) error {
-	t.KernelOffset = make([]byte, 32)
-	if _, err := io.ReadFull(r, t.KernelOffset); err != nil {
+	if _, err := io.ReadFull(r, t.KernelOffset[:]); err != nil {
 		return err
 	}
 

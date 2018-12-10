@@ -3,7 +3,7 @@ package consensus
 import (
 	"bytes"
 	"encoding/hex"
-	"github.com/yoss22/bulletproofs"
+	. "github.com/yoss22/bulletproofs"
 	"testing"
 )
 
@@ -23,7 +23,7 @@ func TestTransactionOutputSerialize(t *testing.T) {
 	serialized, _ := hex.DecodeString(
 		"0832a3990cd8a497ad280394afeaa5fcbdf02d6e8c86eb7fc47ba6bb25cd8973fd")
 
-	Commit := new(bulletproofs.Point)
+	Commit := new(Point)
 	if err := Commit.Read(bytes.NewReader(serialized)); err != nil {
 		t.Errorf("failed to read point")
 	}
