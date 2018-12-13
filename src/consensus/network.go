@@ -5,7 +5,7 @@
 package consensus
 
 // MagicCode is expected in the header of every message
-var MagicCode = [2]byte{0x1e, 0xc5}
+var MagicCode = [2]byte{0x54, 0x34}
 
 const (
 	// protocolVersion version of grin p2p protocol
@@ -17,12 +17,11 @@ const (
 	// MaxMsgLen is the maximum size we're willing to accept for any message. Enforced by the
 	// peer-to-peer networking layer only for DoS protection.
 	MaxMsgLen uint64 = 20000000
-
 )
 
 // Types of p2p messages
 const (
-	MsgTypeError        uint8 = iota
+	MsgTypeError uint8 = iota
 	MsgTypeHand
 	MsgTypeShake
 	MsgTypePing
@@ -30,12 +29,19 @@ const (
 	MsgTypeGetPeerAddrs
 	MsgTypePeerAddrs
 	MsgTypeGetHeaders
+	MsgTypeHeader
 	MsgTypeHeaders
 	MsgTypeGetBlock
 	MsgTypeBlock
 	MsgTypeGetCompactBlock
 	MsgTypeCompactBlock
+	MsgTypeStemTransaction
 	MsgTypeTransaction
+	MsgTypeTxHashSetRequest
+	MsgTypeTxHashSetArchive
+	MsgTypeBanReason
+	MsgTypeGetTransaction
+	MsgTypeTransactionKernel
 )
 
 // Capabilities of node
@@ -49,8 +55,9 @@ const (
 	// Can provide block headers and the UTXO set for some recent-enough height.
 	CapUtxoHist = 1 << 1
 	// Can provide a list of healthy peers
-	CapPeerList = 1 << 2
-	CapFullNode = CapFullHist | CapUtxoHist | CapPeerList
+	CapPeerList     = 1 << 2
+	CapFastSyncNode = CapUtxoHist | CapPeerList
+	CapFullNode     = CapFullHist | CapUtxoHist | CapPeerList
 )
 
 // Network error codes
@@ -60,13 +67,13 @@ const (
 
 const (
 	// Maximum number of hashes in a block header locator request
-	MaxLocators int = 14;
+	MaxLocators int = 14
 
 	// Maximum number of block headers a peer should ever send
-	MaxBlockHeaders = 512;
+	MaxBlockHeaders = 512
 
 	// Maximum number of peer addresses a peer should ever send
-	MaxPeerAddrs = 256;
+	MaxPeerAddrs = 256
 )
 
 // Protocol defines grin-node network communicates

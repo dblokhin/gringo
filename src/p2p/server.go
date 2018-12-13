@@ -13,8 +13,8 @@ const (
 	noncesCap = 100
 )
 
-type nonceList struct{
-	idx int
+type nonceList struct {
+	idx  int
 	list []uint64
 }
 
@@ -28,7 +28,7 @@ func (n *nonceList) Init() {
 }
 
 // NextNonce returns next nonce from list
-func (n *nonceList) NextNonce() uint64{
+func (n *nonceList) NextNonce() uint64 {
 	n.idx = (n.idx + 1) % noncesCap
 	return n.list[n.idx]
 }

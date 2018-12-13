@@ -5,7 +5,7 @@
 package p2p
 
 import (
-	"consensus"
+	"github.com/dblokhin/gringo/src/consensus"
 	"github.com/sirupsen/logrus"
 )
 
@@ -68,7 +68,7 @@ type PeersPool interface {
 // Syncer synchronize blockchain & mempool via peers pool
 type Syncer struct {
 	// Chain is a grin blockchain
-	Chain Blockchain
+	Chain   Blockchain
 	Mempool Mempool
 
 	// Pool of peers (peers manager)
@@ -88,6 +88,11 @@ func NewSyncer(addrs []string, chain Blockchain, mempool Mempool) *Syncer {
 	}
 
 	return sync
+}
+
+// Run begins syncing with peers.
+func (s *Syncer) Run() {
+	s.Pool.Run()
 }
 
 // Stop stops activity
@@ -112,7 +117,6 @@ func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
 		peerInfo.Height = msg.Height
 		peerInfo.Unlock()
 
-
 		// send answer
 		var resp Pong
 
@@ -123,7 +127,7 @@ func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
 		s.Chain.RUnlock()
 
 		peer.WriteMessage(&resp)
-		logrus.Infof("sended pong")
+		logrus.Debugf("Sent Pong to %s", peer.conn.RemoteAddr())
 
 	case *Pong:
 		// update peer info
@@ -132,6 +136,8 @@ func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
 		peerInfo.Height = msg.Height
 		peerInfo.Unlock()
 
+		logrus.Debugf("Received Pong from %s", peer.conn.RemoteAddr())
+
 	case *GetPeerAddrs:
 		// MUST NOT be answered
 		// Send answer
@@ -139,7 +145,7 @@ func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
 		if peers != nil {
 			peer.WriteMessage(peers)
 		}
-		logrus.Infof("sended peers (%d)", len(peers.peers))
+		logrus.Debugf("Sent %d PeerAddrs to %s", len(peers.peers), peer.conn.RemoteAddr())
 
 	case *PeerAddrs:
 		// Adding peer to pool
@@ -151,11 +157,21 @@ func (s *Syncer) ProcessMessage(peer *Peer, message Message) {
 		// MUST be answered
 		// send answer
 		headers := s.Chain.GetBlockHeaders(msg.Locator)
-		resp := BlockHeaders {
+		resp := BlockHeaders{
 			Headers: headers,
 		}
 
 		peer.WriteMessage(&resp)
+
+	case *BlockHeader:
+		headers := []consensus.BlockHeader{msg.Header}
+		if err := s.Chain.ProcessHeaders(headers); err != nil {
+			// ban peer ?
+			//s.Pool.Ban(peer.conn.RemoteAddr().String())
+			logrus.Infof("Failed to process header: %v", err)
+		}
+
+		logrus.Debugf("Received BlockHeader from %s for height %d: %v:", peer.conn.RemoteAddr(), msg.Header.Height, msg.Header.Hash())
 
 	case *BlockHeaders:
 		if err := s.Chain.ProcessHeaders(msg.Headers); err != nil {

@@ -4,7 +4,7 @@
 
 package chain
 
-import "consensus"
+import "github.com/dblokhin/gringo/src/consensus"
 
 // Storage represents storage methods for backends
 // Storage doesnt check consensus rules!
@@ -22,4 +22,3 @@ type Storage interface {
 	// Returns list of blocks from id
 	From(id consensus.BlockID, limit int) consensus.BlockList
 }
-

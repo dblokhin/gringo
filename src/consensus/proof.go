@@ -6,17 +6,22 @@ package consensus
 
 import (
 	"bytes"
-	"github.com/sirupsen/logrus"
 	"encoding/binary"
 	"errors"
+	"fmt"
+	"github.com/dblokhin/gringo/src/cuckoo"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/blake2b"
-	"cuckoo"
+	"io"
 )
 
 // RangeProof of work
-type Proof struct  {
+type Proof struct {
+	// Power of 2 used for the size of the cuckoo graph
+	EdgeBits uint8
+
 	// The nonces
- 	Nonces []uint32
+	Nonces []uint32
 }
 
 var (
@@ -24,11 +29,11 @@ var (
 )
 
 // Validate validates the pow
-func (p *Proof) Validate(header *BlockHeader, cuckooSize uint32) error {
-	logrus.Info("block POW validate")
+func (p *Proof) Validate(header *BlockHeader, cuckooSize uint8) error {
+	logrus.Infof("block POW validate for size %d", cuckooSize)
 
-	cuckoo := cuckoo.New(header.Hash(), cuckooSize)
-	if cuckoo.Verify(header.POW.Nonces, Easiness) {
+	cuckoo := cuckoo.NewCuckaroo(header.bytesWithoutPOW())
+	if cuckoo.Verify(header.POW.Nonces, header.POW.EdgeBits) {
 		return nil
 	}
 
@@ -47,26 +52,94 @@ func (p *Proof) Hash() []byte {
 	return hash[:]
 }
 
-// Bytes returns binary []byte
-func (p *Proof) Bytes() []byte {
+// ProofBytes returns the serialised proof of work nonces.
+func (p *Proof) ProofBytes() []byte {
 	buff := new(bytes.Buffer)
 
-	// Write POW
-	if len(p.Nonces) != ProofSize {
-		logrus.Fatal(errors.New("invalid proof len"))
+	// The solution we serialise depends on the size of the cuckoo graph. The
+	// cycle is always of length 42, but each vertex takes up more bits on
+	// larger graphs, nonceLengthBits is this number of bits.
+	nonceLengthBits := uint(p.EdgeBits)
+
+	// Make a slice just large enough to fit all of the POW bits.
+	bitvecLengthBits := nonceLengthBits * uint(ProofSize)
+	bitvec := make([]uint8, (bitvecLengthBits+7)/8)
+
+	for n, nonce := range p.Nonces {
+		// Pack this nonce into the bit stream.
+		for bit := uint(0); bit < nonceLengthBits; bit++ {
+			// If this bit is set, then write it to the correct position in the
+			// stream.
+			if nonce&(1<<bit) != 0 {
+				offsetBits := uint(n)*nonceLengthBits + bit
+				bitvec[offsetBits/8] |= 1 << (offsetBits % 8)
+			}
+		}
 	}
 
-	for i := 0; i < int(ProofSize); i++ {
-		if err := binary.Write(buff, binary.BigEndian, p.Nonces[i]); err != nil {
-			logrus.Fatal(err)
-		}
+	if _, err := buff.Write(bitvec); err != nil {
+		logrus.Fatal(err)
 	}
 
 	return buff.Bytes()
 }
 
+// Bytes returns binary []byte
+func (p *Proof) Bytes() []byte {
+	buff := new(bytes.Buffer)
+
+	// Write size of cuckoo graph.
+	if err := binary.Write(buff, binary.BigEndian, p.EdgeBits); err != nil {
+		logrus.Fatal(err)
+	}
+
+	buff.Write(p.ProofBytes())
+
+	return buff.Bytes()
+}
+
+// Read deserializes a Proof.
+func (p *Proof) Read(r io.Reader) error {
+	if err := binary.Read(r, binary.BigEndian, &p.EdgeBits); err != nil {
+		return err
+	}
+
+	if p.EdgeBits == 0 || p.EdgeBits > 64 {
+		return fmt.Errorf("invalid cuckoo graph size: %d", p.EdgeBits)
+	}
+
+	p.Nonces = make([]uint32, ProofSize)
+
+	nonceLengthBits := uint(p.EdgeBits)
+
+	// Make a slice just large enough to fit all of the POW bits.
+	bitvecLengthBits := nonceLengthBits * uint(ProofSize)
+	bitvec := make([]uint8, (bitvecLengthBits+7)/8)
+	if _, err := io.ReadFull(r, bitvec); err != nil {
+		return err
+	}
+
+	for i := 0; i < ProofSize; i++ {
+		var nonce uint32
+
+		// Read this nonce from the packed bitstream.
+		for bit := uint(0); bit < nonceLengthBits; bit++ {
+			// Find the position of this bit in bitvec
+			offsetBits := uint(i)*nonceLengthBits + bit
+			// If this bit is set in bitvec then set the same bit in the nonce.
+			if bitvec[offsetBits/8]&(1<<(offsetBits%8)) != 0 {
+				nonce |= 1 << bit
+			}
+		}
+
+		p.Nonces[i] = nonce
+	}
+
+	return nil
+}
+
 func NewProof(nonces []uint32) Proof {
-	return Proof {
+	return Proof{
 		Nonces: nonces,
 	}
 }

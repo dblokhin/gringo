@@ -5,55 +5,32 @@
 package consensus
 
 import (
-	"fmt"
 	"bytes"
-	"github.com/sirupsen/logrus"
 	"encoding/binary"
-	"io"
-	"secp256k1zkp"
 	"errors"
+	"fmt"
+	"github.com/sirupsen/logrus"
+	"io"
 	"sort"
 )
 
 // Transaction an grin transaction
 type Transaction struct {
+	// The "k2" kernel offset.
+	KernelOffset [32]byte
 	// Set of inputs spent by the transaction
 	Inputs InputList
 	// Set of outputs the transaction produces
 	Outputs OutputList
-	// Fee paid by the transaction
-	Fee uint64
-	// Transaction is not valid before this block height
-	// It is invalid for this to be less than the lock_height of any UTXO being spent
-	LockHeight uint64
-	// The signature proving the excess is a valid public key, which signs
-	// the transaction fee
-	ExcessSig Hash
-
+	// The kernels for this transaction
+	Kernels TxKernelList
 }
 
 // Bytes implements p2p Message interface
 func (t *Transaction) Bytes() []byte {
 	buff := new(bytes.Buffer)
 
-	// Write fee & lockHeight
-	if err := binary.Write(buff, binary.BigEndian, t.Fee); err != nil {
-		logrus.Fatal(err)
-	}
-
-	if err := binary.Write(buff, binary.BigEndian, t.LockHeight); err != nil {
-		logrus.Fatal(err)
-	}
-
-	// Write ExcessSig
-	if len(t.ExcessSig) > secp256k1zkp.MaxSignatureSize {
-		logrus.Fatal(errors.New("invalid excess_sig len"))
-	}
-	if err := binary.Write(buff, binary.BigEndian, uint64(len(t.ExcessSig))); err != nil {
-		logrus.Fatal(err)
-	}
-
-	if _, err := buff.Write(t.ExcessSig); err != nil {
+	if _, err := buff.Write(t.KernelOffset[:]); err != nil {
 		logrus.Fatal(err)
 	}
 
@@ -66,10 +43,15 @@ func (t *Transaction) Bytes() []byte {
 		logrus.Fatal(err)
 	}
 
+	if err := binary.Write(buff, binary.BigEndian, uint64(len(t.Kernels))); err != nil {
+		logrus.Fatal(err)
+	}
+
 	// Consensus rule that everything is sorted in lexicographical order on the wire
 	// consensus rule: input, output, kernels MUST BE sorted!
 	sort.Sort(t.Inputs)
 	sort.Sort(t.Outputs)
+	sort.Sort(t.Kernels)
 
 	// Write inputs
 	for _, input := range t.Inputs {
@@ -85,6 +67,13 @@ func (t *Transaction) Bytes() []byte {
 		}
 	}
 
+	// Write kernels
+	for _, kernel := range t.Kernels {
+		if _, err := buff.Write(kernel.Bytes()); err != nil {
+			logrus.Fatal(err)
+		}
+	}
+
 	return buff.Bytes()
 }
 
@@ -95,33 +84,12 @@ func (t *Transaction) Type() uint8 {
 
 // Read implements p2p Message interface
 func (t *Transaction) Read(r io.Reader) error {
-
-	// Read fee & lockHeight
-	if err := binary.Read(r, binary.BigEndian, &t.Fee); err != nil {
-		logrus.Fatal(err)
-	}
-
-	if err := binary.Read(r, binary.BigEndian, &t.LockHeight); err != nil {
-		logrus.Fatal(err)
-	}
-
-	// Read ExcessSig
-	var excessSigLen uint64
-	if err := binary.Read(r, binary.BigEndian, &excessSigLen); err != nil {
+	if _, err := io.ReadFull(r, t.KernelOffset[:]); err != nil {
 		return err
 	}
 
-	if excessSigLen > uint64(secp256k1zkp.MaxSignatureSize) {
-		return errors.New("invalid excess_sig len")
-	}
-
-	t.ExcessSig = make([]byte, excessSigLen)
-	if _, err := io.ReadFull(r, t.ExcessSig); err != nil {
-		return err
-	}
-
-	// Inputs & outputs lens
-	var inputs, outputs uint64
+	// Read the lengths of the subsequent fields.
+	var inputs, outputs, kernels uint64
 	if err := binary.Read(r, binary.BigEndian, &inputs); err != nil {
 		return err
 	}
@@ -130,14 +98,26 @@ func (t *Transaction) Read(r io.Reader) error {
 		return err
 	}
 
+	if err := binary.Read(r, binary.BigEndian, &kernels); err != nil {
+		return err
+	}
+
+	// Sanity check the lengths.
+	if inputs > 1000000 {
+		return errors.New("transaction contains too many inputs")
+	}
+	if outputs > 1000000 {
+		return errors.New("transaction contains too many outputs")
+	}
+	if kernels > 1000000 {
+		return errors.New("transaction contains too many kernels")
+	}
+
 	t.Inputs = make([]Input, inputs)
 	for i := uint64(0); i < inputs; i++ {
-		commitment := make([]byte, secp256k1zkp.PedersenCommitmentSize)
-		if _, err := io.ReadFull(r, commitment); err != nil {
+		if err := t.Inputs[i].Read(r); err != nil {
 			return err
 		}
-
-		t.Inputs[i].Commit = commitment
 	}
 
 	t.Outputs = make([]Output, outputs)
@@ -147,6 +127,15 @@ func (t *Transaction) Read(r io.Reader) error {
 		}
 	}
 
+	t.Kernels = make([]TxKernel, kernels)
+	for i := uint64(0); i < kernels; i++ {
+		if err := t.Kernels[i].Read(r); err != nil {
+			return err
+		}
+	}
+
+	// TODO: Check block weight.
+
 	// Check sorted input, output requiring consensus rule!
 	if !sort.IsSorted(t.Inputs) {
 		return errors.New("consensus error: inputs are not sorted")
@@ -154,6 +143,10 @@ func (t *Transaction) Read(r io.Reader) error {
 
 	if !sort.IsSorted(t.Outputs) {
 		return errors.New("consensus error: outputs are not sorted")
+	}
+
+	if !sort.IsSorted(t.Kernels) {
+		return errors.New("consensus error: kernels are not sorted")
 	}
 
 	return nil

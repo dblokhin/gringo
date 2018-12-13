@@ -5,8 +5,8 @@
 package secp256k1zkp
 
 import (
+	"encoding/hex"
 	"io"
-	"fmt"
 )
 
 type Commitment []byte
@@ -24,13 +24,6 @@ func (c *Commitment) Read(r io.Reader) error {
 }
 
 // String implements String() interface
-func (p Commitment) String() string {
-	return fmt.Sprintf("%#v", p)
-}
-
-type RangeProof struct {
-	// The proof itself, at most 5134 bytes long
-	Proof []byte // max size MAX_PROOF_SIZE
-	// The length of the proof
-	ProofLen int
+func (c Commitment) String() string {
+	return hex.EncodeToString(c.Bytes())
 }

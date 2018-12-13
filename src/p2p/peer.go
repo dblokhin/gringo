@@ -5,15 +5,17 @@
 package p2p
 
 import (
-	"net"
-	"consensus"
-	"github.com/sirupsen/logrus"
 	"bufio"
-	"io"
+	"bytes"
+	"encoding/hex"
 	"errors"
+	"fmt"
+	"github.com/dblokhin/gringo/src/consensus"
+	"github.com/sirupsen/logrus"
+	"io"
+	"net"
 	"sync"
 	"sync/atomic"
-	"encoding/hex"
 )
 
 // Peer is a participant of p2p network
@@ -25,8 +27,8 @@ type Peer struct {
 	bytesReceived uint64
 	bytesSent     uint64
 
-	quit      chan struct{}
-	wg        sync.WaitGroup
+	quit chan struct{}
+	wg   sync.WaitGroup
 
 	// Queue for sending message
 	sendQueue chan Message
@@ -156,7 +158,8 @@ out:
 // WriteMessage places msg to send queue
 func (p *Peer) WriteMessage(msg Message) {
 	select {
-	case <-p.quit: logrus.Info("cannot send message, peer is shutting down")
+	case <-p.quit:
+		logrus.Info("cannot send message, peer is shutting down")
 	case p.sendQueue <- msg:
 	}
 }
@@ -173,6 +176,7 @@ func (p *Peer) readHandler() {
 out:
 	for atomic.LoadInt32(&p.disconnect) == 0 {
 		if exitError = header.Read(input); exitError != nil {
+			logrus.Debugf("Failed to read message from peer %v", p.conn.RemoteAddr())
 			break out
 		}
 
@@ -181,8 +185,19 @@ out:
 			break out
 		}
 
-		// limit read
-		rl := io.LimitReader(input, int64(header.Len))
+		// Read the whole message. If the peer disconnects mid-way through
+		// ReadFull will return an error.
+		readBuffer := make([]byte, header.Len)
+		_, err := io.ReadFull(input, readBuffer)
+		if err != nil {
+			logrus.Infof("Failed to read message: %v", err)
+			break out
+		}
+
+		// Print the message for debugging purposes.
+		logrus.Debugf("Received message from %s: %02x%02x", p.conn.RemoteAddr(), header.Bytes(), readBuffer)
+
+		rl := bytes.NewReader(readBuffer)
 
 		switch header.Type {
 		case consensus.MsgTypePing:
@@ -192,7 +207,7 @@ out:
 				break out
 			}
 
-			logrus.Debugf("received Ping (%s): %s", p.conn.RemoteAddr().String(), msg.String())
+			logrus.Debugf("Received Ping from %s", p.conn.RemoteAddr().String())
 			p.sync.ProcessMessage(p, &msg)
 
 		case consensus.MsgTypePong:
@@ -225,11 +240,20 @@ out:
 			logrus.Infof("received %d peers", len(msg.peers))
 			p.sync.ProcessMessage(p, &msg)
 
-
 		case consensus.MsgTypeGetHeaders:
 			logrus.Infof("receiving header request (%s)", p.conn.RemoteAddr().String())
 
 			var msg GetBlockHeaders
+			if exitError = msg.Read(rl); exitError != nil {
+				break out
+			}
+
+			p.sync.ProcessMessage(p, &msg)
+
+		case consensus.MsgTypeHeader:
+			logrus.Infof("header notification from peer %s", p.conn.RemoteAddr().String())
+
+			var msg BlockHeader
 			if exitError = msg.Read(rl); exitError != nil {
 				break out
 			}
@@ -295,13 +319,21 @@ out:
 			p.sync.ProcessMessage(p, &msg)
 
 		default:
-			logrus.Debug("received unexpected message: ", header)
-			exitError = errors.New("receive unexpected message (type) from peer")
+			// Print the content of the unknown message.
+			buff := make([]byte, header.Len)
+			if _, err := io.ReadFull(rl, buff); err != nil {
+				logrus.Debugf("failed to read message body: %v", err)
+				break out
+			}
+
+			logrus.Debugf("received unexpected message: %02x%02x", header.Bytes(), buff)
+
+			exitError = fmt.Errorf("received unexpected message from peer: %v", header)
 			break out
 		}
 
 		// update recv bytes counter
-		atomic.AddUint64(&p.bytesReceived, header.Len + consensus.HeaderLen)
+		atomic.AddUint64(&p.bytesReceived, header.Len+consensus.HeaderLen)
 	}
 
 	p.wg.Done()
@@ -334,7 +366,7 @@ func (p *Peer) WaitForDisconnect() {
 
 // SendPing sends Ping request to peer
 func (p *Peer) SendPing() {
-	logrus.Info("sending ping")
+	logrus.Infof("Sending Ping to %s", p.conn.RemoteAddr())
 
 	var request Ping
 	request.TotalDifficulty = consensus.Difficulty(1)
@@ -361,7 +393,7 @@ func (p *Peer) SendBlock(block *consensus.Block) {
 
 // SendPeerRequest sends peer request
 func (p *Peer) SendPeerRequest(capabilities consensus.Capabilities) {
-	logrus.Info("sending peer request")
+	logrus.Infof("Sending GetPeerAddrs to %s", p.conn.RemoteAddr())
 	var request GetPeerAddrs
 
 	request.Capabilities = capabilities

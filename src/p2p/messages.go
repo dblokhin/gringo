@@ -5,14 +5,14 @@
 package p2p
 
 import (
-	"io"
-	"encoding/binary"
-	"github.com/sirupsen/logrus"
-	"consensus"
 	"bytes"
-	"net"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/dblokhin/gringo/src/consensus"
+	"github.com/sirupsen/logrus"
+	"io"
+	"net"
 )
 
 // Header is header of any protocol message, used to identify incoming messages
@@ -23,6 +23,25 @@ type Header struct {
 	Type uint8
 	// Len length of the message in bytes.
 	Len uint64
+}
+
+// Bytes serialises the header to its on-the-wire representation.
+func (h *Header) Bytes() []byte {
+	buff := new(bytes.Buffer)
+
+	if _, err := buff.Write(h.magic[:]); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if err := binary.Write(buff, binary.BigEndian, h.Type); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if err := binary.Write(buff, binary.BigEndian, h.Len); err != nil {
+		logrus.Fatal(err)
+	}
+
+	return buff.Bytes()
 }
 
 // Write writes header as binary data to writer
@@ -57,7 +76,7 @@ func (h *Header) Read(r io.Reader) error {
 
 // validateMagic verifies magic code
 func (h Header) validateMagic() bool {
-	return h.magic[0] == 0x1e && h.magic[1] == 0xc5
+	return bytes.Equal(h.magic[:], consensus.MagicCode[:])
 }
 
 // Ping request
@@ -292,6 +311,41 @@ func (h *GetBlock) Read(r io.Reader) error {
 
 // String implements String() interface
 func (h GetBlock) String() string {
+	return fmt.Sprintf("%#v", h)
+}
+
+// BlockHeader is a p2p message that serves as a notification that there is a
+// new block. If this block isn't known then the block can be requested from
+// the network. BlockHeaders are unsolicited rather than as a response to a
+// request.
+type BlockHeader struct {
+	// Header is a single block header.
+	Header consensus.BlockHeader
+}
+
+// Bytes implements Message interface
+func (h *BlockHeader) Bytes() []byte {
+	buff := new(bytes.Buffer)
+
+	if _, err := buff.Write(h.Header.Bytes()); err != nil {
+		logrus.Fatal(err)
+	}
+
+	return buff.Bytes()
+}
+
+// Type implements Message interface
+func (h *BlockHeader) Type() uint8 {
+	return consensus.MsgTypeHeader
+}
+
+// Read implements Message interface
+func (h *BlockHeader) Read(r io.Reader) error {
+	return h.Header.Read(r)
+}
+
+// String implements String() interface
+func (h BlockHeader) String() string {
 	return fmt.Sprintf("%#v", h)
 }
 

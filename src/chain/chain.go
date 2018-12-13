@@ -5,12 +5,12 @@
 package chain
 
 import (
-	"consensus"
-	"sync"
 	"bytes"
-	"time"
-	"github.com/sirupsen/logrus"
 	"errors"
+	"github.com/dblokhin/gringo/src/consensus"
+	"github.com/sirupsen/logrus"
+	"sync"
+	"time"
 )
 
 // Testnet1 genesis block
@@ -20,7 +20,6 @@ var Testnet1 = consensus.Block{
 		Height:          0,
 		Previous:        bytes.Repeat([]byte{0xff}, consensus.BlockHashSize),
 		Timestamp:       time.Date(2017, 11, 16, 20, 0, 0, 0, time.UTC),
-		Difficulty:      10,
 		TotalDifficulty: 10,
 
 		UTXORoot:       bytes.Repeat([]byte{0x00}, 32),
@@ -71,6 +70,76 @@ var Testnet2 = consensus.Block{
 	},
 }
 
+// Testnet 3 initial block difficulty, moderately high, taking into account
+// a 30x Cuckoo adjustment factor
+const TESTNET3_INITIAL_DIFFICULTY = 30000
+
+var Testnet3 = consensus.Block{
+	Header: consensus.BlockHeader{
+		Version:         1,
+		Height:          0,
+		Previous:        bytes.Repeat([]byte{0xff}, consensus.BlockHashSize),
+		Timestamp:       time.Date(2018, 7, 8, 18, 0, 0, 0, time.UTC),
+		TotalDifficulty: TESTNET3_INITIAL_DIFFICULTY,
+
+		UTXORoot:       bytes.Repeat([]byte{0x00}, 32),
+		RangeProofRoot: bytes.Repeat([]byte{0x00}, 32),
+		KernelRoot:     bytes.Repeat([]byte{0x00}, 32),
+
+		TotalKernelOffset: bytes.Repeat([]byte{0x00}, 32),
+		TotalKernelSum:    bytes.Repeat([]byte{0x00}, 33),
+
+		Nonce: 4956988373127691,
+		POW: consensus.Proof{
+			EdgeBits: 30,
+			Nonces: []uint32{
+				0xa420dc, 0xc8ffee, 0x10e433e, 0x1de9428, 0x2ed4cea, 0x52d907b, 0x5af0e3f,
+				0x6b8fcae, 0x8319b53, 0x845ca8c, 0x8d2a13e, 0x8d6e4cc, 0x9349e8d, 0xa7a33c5,
+				0xaeac3cb, 0xb193e23, 0xb502e19, 0xb5d9804, 0xc9ac184, 0xd4f4de3, 0xd7a23b8,
+				0xf1d8660, 0xf443756, 0x10b833d2, 0x11418fc5, 0x11b8aeaf, 0x131836ec, 0x132ab818,
+				0x13a46a55, 0x13df89fe, 0x145d65b5, 0x166f9c3a, 0x166fe0ef, 0x178cb36f, 0x185baf68,
+				0x1bbfe563, 0x1bd637b4, 0x1cfc8382, 0x1d1ed012, 0x1e391ca5, 0x1e999b4c, 0x1f7c6d21,
+			},
+		},
+	},
+}
+
+const unitDifficulty = consensus.Difficulty(
+	(2 << (consensus.SecondPowEdgeBits - consensus.BaseEdgeBits)) *
+		uint64(consensus.SecondPowEdgeBits))
+
+const testnet4InitialDifficulty = unitDifficulty * 1000000
+
+var Testnet4 = consensus.Block{
+	Header: consensus.BlockHeader{
+		Version:         1,
+		Height:          0,
+		Previous:        bytes.Repeat([]byte{0xff}, consensus.BlockHashSize),
+		Timestamp:       time.Date(2018, 10, 17, 20, 0, 0, 0, time.UTC),
+		TotalDifficulty: testnet4InitialDifficulty,
+
+		UTXORoot:       bytes.Repeat([]byte{0x00}, 32),
+		RangeProofRoot: bytes.Repeat([]byte{0x00}, 32),
+		KernelRoot:     bytes.Repeat([]byte{0x00}, 32),
+
+		TotalKernelOffset: bytes.Repeat([]byte{0x00}, 32),
+		TotalKernelSum:    bytes.Repeat([]byte{0x00}, 33),
+
+		Nonce: 8612241555342799290,
+		POW: consensus.Proof{
+			EdgeBits: 29,
+			Nonces: []uint32{
+				0x46f3b4, 0x1135f8c, 0x1a1596f, 0x1e10f71, 0x41c03ea, 0x63fe8e7, 0x65af34f,
+				0x73c16d3, 0x8216dc3, 0x9bc75d0, 0xae7d9ad, 0xc1cb12b, 0xc65e957, 0xf67a152,
+				0xfac6559, 0x100c3d71, 0x11eea08b, 0x1225dfbb, 0x124d61a1, 0x132a14b4, 0x13f4ec38,
+				0x1542d236, 0x155f2df0, 0x1577394e, 0x163c3513, 0x19349845, 0x19d46953, 0x19f65ed4,
+				0x1a0411b9, 0x1a2fa039, 0x1a72a06c, 0x1b02ddd2, 0x1b594d59, 0x1b7bffd3, 0x1befe12e,
+				0x1c82e4cd, 0x1d492478, 0x1de132a5, 0x1e578b3c, 0x1ed96855, 0x1f222896, 0x1fea0da6,
+			},
+		},
+	},
+}
+
 // Mainnet genesis block
 var Mainnet = consensus.Block{
 	Header: consensus.BlockHeader{
@@ -78,7 +147,6 @@ var Mainnet = consensus.Block{
 		Height:          0,
 		Previous:        bytes.Repeat([]byte{0xff}, consensus.BlockHashSize),
 		Timestamp:       time.Date(2018, 8, 14, 0, 0, 0, 0, time.UTC),
-		Difficulty:      1000,
 		TotalDifficulty: 1000,
 
 		UTXORoot:       bytes.Repeat([]byte{0x00}, 32),
@@ -125,11 +193,10 @@ func New(genesis *consensus.Block, storage Storage) *Chain {
 		totalDifficulty: genesis.Header.TotalDifficulty,
 	}
 
-
 	// init state from storage
 	// setting up currents: height, total diff & blockHashChain
 	if lastBlock := storage.GetLastBlock(); lastBlock != nil {
-		chain.head	= lastBlock
+		chain.head = lastBlock
 		chain.totalDifficulty = lastBlock.Header.TotalDifficulty
 		chain.height = lastBlock.Header.Height
 	}
@@ -172,12 +239,12 @@ func (c *Chain) GetBlockHeaders(loc consensus.Locator) []consensus.BlockHeader {
 		}
 
 		blockID := consensus.BlockID{
-			Hash: hash,
+			Hash:   hash,
 			Height: nil,
 		}
 
 		// get blocks from
-		blockList := c.storage.From(blockID, consensus.MaxBlockHeaders + 1)
+		blockList := c.storage.From(blockID, consensus.MaxBlockHeaders+1)
 		if len(blockList) > 0 {
 			// pass first block
 			blockList = blockList[1:]
@@ -212,6 +279,11 @@ func (c *Chain) GetBlockID(b consensus.BlockID) *consensus.Block {
 }
 
 func (c *Chain) ProcessHeaders(headers []consensus.BlockHeader) error {
+	for _, header := range headers {
+		if err := header.Validate(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -237,7 +309,7 @@ func (c *Chain) ProcessBlock(block *consensus.Block) error {
 	// Get the previous block
 	prevHeight := block.Header.Height - 1
 	prevBlockID := consensus.BlockID{
-		Hash: block.Header.Previous,
+		Hash:   block.Header.Previous,
 		Height: &prevHeight,
 	}
 	prevBlock := c.storage.GetBlock(prevBlockID)
@@ -258,7 +330,7 @@ func (c *Chain) ProcessBlock(block *consensus.Block) error {
 		return errors.New("invalid block time")
 	}
 	// - block.TotalDiff MUST BE == previous.TotalDiff + previous.POW.ToDifficulty()
-	if block.Header.TotalDifficulty != prevBlock.Header.TotalDifficulty + prevBlock.Header.POW.ToDifficulty() {
+	if block.Header.TotalDifficulty != prevBlock.Header.TotalDifficulty+prevBlock.Header.POW.ToDifficulty() {
 		return errors.New("wrong block total difficulty")
 	}
 	// - check that the difficulty is not less than that calculated by the
@@ -270,7 +342,7 @@ func (c *Chain) ProcessBlock(block *consensus.Block) error {
 	}
 
 	blockID := consensus.BlockID{
-		Hash: nil,
+		Hash:   nil,
 		Height: &fromHeight,
 	}
 

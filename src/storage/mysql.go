@@ -8,8 +8,8 @@ package storage
 
 import (
 	"database/sql"
+	"github.com/dblokhin/gringo/src/consensus"
 	_ "github.com/go-sql-driver/mysql"
-	"consensus"
 	"sync"
 )
 
@@ -53,4 +53,3 @@ func (s *SqlStorage) From(id consensus.BlockID, limit int) consensus.BlockList {
 func (s *SqlStorage) GetLastBlock() *consensus.Block {
 	return nil
 }
-

@@ -5,15 +5,15 @@
 package p2p
 
 import (
-	"io"
-	"consensus"
 	"bufio"
 	"errors"
+	"github.com/dblokhin/gringo/src/consensus"
+	"io"
 )
 
 const (
 	// userAgent is name of version of the software
-	userAgent       = "gringo v0.0.1"
+	userAgent = "gringo v0.0.1"
 )
 
 // Message defines methods for WriteMessage/ReadMessage functions

@@ -52,8 +52,14 @@ const (
 	// ProofSize Cuckoo-cycle proof size (cycle length)
 	ProofSize int = 42
 
-	// DefaultSizeShift Default Cuckoo Cycle size shift used for mining and validating.
-	DefaultSizeShift uint32 = 30
+	// DefaultMinEdgeBits is the default Cuckatoo Cycle size used for mining and
+	// validating.
+	DefaultMinEdgeBits uint8 = 30
+
+	/// Secondary proof-of-work size, meant to be ASIC resistant.
+	SecondPowEdgeBits uint8 = 29
+
+	BaseEdgeBits uint8 = 24
 
 	// Easiness Default Cuckoo Cycle easiness, high enough to have good likeliness to find
 	// a solution.
@@ -84,11 +90,14 @@ const (
 	// little less than 6 months.
 	HardForkInterval uint64 = 250000
 
+	// The block height at which version 2 blocks are valid
+	HardForkV2Height uint64 = 95000
+
 	// Time window in blocks to calculate block time median
 	MedianTimeWindow int = 11
 
 	// Index at half the desired median
-	MedianTimeIndex	= MedianTimeWindow / 2
+	MedianTimeIndex = MedianTimeWindow / 2
 
 	// Number of blocks used to calculate difficulty adjustments
 	DifficultyAdjustWindow int = 60

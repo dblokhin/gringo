@@ -5,13 +5,14 @@
 package p2p
 
 import (
-	"net"
-	"consensus"
-	"encoding/binary"
 	"bytes"
+	"encoding/binary"
+	"errors"
+	"github.com/dblokhin/gringo/src/chain"
+	"github.com/dblokhin/gringo/src/consensus"
 	"github.com/sirupsen/logrus"
 	"io"
-	"errors"
+	"net"
 )
 
 // First part of a handshake, sender advertises its version and
@@ -23,6 +24,10 @@ type hand struct {
 	Capabilities consensus.Capabilities
 	// randomly generated for each handshake, helps detect self
 	Nonce uint64
+
+	// genesis block of our chain, only connect to peers on the same chain
+	Genesis consensus.Hash
+
 	// total difficulty accumulated by the sender, used to check whether sync
 	// may be needed
 	TotalDifficulty consensus.Difficulty
@@ -66,6 +71,8 @@ func (h *hand) Bytes() []byte {
 	// Write user agent [len][string]
 	binary.Write(buff, binary.BigEndian, uint64(len(h.UserAgent)))
 	buff.WriteString(h.UserAgent)
+
+	binary.Write(buff, binary.BigEndian, h.Genesis)
 
 	return buff.Bytes()
 }
@@ -122,6 +129,14 @@ func (h *hand) Read(r io.Reader) error {
 	}
 
 	h.UserAgent = string(buff)
+
+	genesisBuf := make([]byte, 32)
+	if _, err := io.ReadFull(r, genesisBuf); err != nil {
+		return err
+	}
+
+	h.Genesis = genesisBuf
+
 	return nil
 }
 
@@ -138,6 +153,10 @@ type shake struct {
 
 	// name of version of the software
 	UserAgent string
+
+	// Genesis is the initial block hash on our chain. Used to prevent
+	// connections to distinct chains.
+	Genesis consensus.Hash
 }
 
 func (h *shake) Bytes() []byte {
@@ -158,6 +177,8 @@ func (h *shake) Bytes() []byte {
 	// Write user agent [len][string]
 	binary.Write(buff, binary.BigEndian, uint64(len(h.UserAgent)))
 	buff.WriteString(h.UserAgent)
+
+	binary.Write(buff, binary.BigEndian, h.Genesis)
 
 	return buff.Bytes()
 }
@@ -195,6 +216,14 @@ func (h *shake) Read(r io.Reader) error {
 	}
 
 	h.UserAgent = string(buff)
+
+	genesisBuf := make([]byte, 32)
+	if _, err := io.ReadFull(r, genesisBuf); err != nil {
+		return err
+	}
+
+	h.Genesis = genesisBuf
+
 	return nil
 }
 
@@ -209,7 +238,7 @@ func shakeByHand(conn net.Conn) (*shake, error) {
 
 	receiver := conn.RemoteAddr().(*net.TCPAddr)
 
-	msg := hand {
+	msg := hand{
 		Version:         consensus.ProtocolVersion,
 		Capabilities:    consensus.CapFullNode,
 		Nonce:           serverNonces.NextNonce(),
@@ -217,6 +246,7 @@ func shakeByHand(conn net.Conn) (*shake, error) {
 		SenderAddr:      sender,
 		ReceiverAddr:    receiver,
 		UserAgent:       userAgent,
+		Genesis:         chain.Testnet4.Hash(),
 	}
 
 	// Send own hand
@@ -249,12 +279,11 @@ func handByShake(conn net.Conn) (*hand, error) {
 	}
 
 	// Send shake
-	msg := shake {
-		Version: consensus.ProtocolVersion,
-		Capabilities: consensus.CapFullNode,
+	msg := shake{
+		Version:         consensus.ProtocolVersion,
+		Capabilities:    consensus.CapFullNode,
 		TotalDifficulty: consensus.Difficulty(1),
-		UserAgent: userAgent,
-
+		UserAgent:       userAgent,
 	}
 	if _, err := WriteMessage(conn, &msg); err != nil {
 		return nil, err

@@ -7,9 +7,9 @@ package consensus
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"github.com/sirupsen/logrus"
 	"io"
-	"errors"
 )
 
 type Locator struct {

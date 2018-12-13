@@ -5,9 +5,10 @@
 package consensus
 
 import (
-	"encoding/hex"
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
+	"fmt"
 	"github.com/dchest/siphash"
 )
 
@@ -19,9 +20,14 @@ const (
 // Hash is hashes (block hash, commitments and so on)
 type Hash []byte
 
+// String prints the hexadecimal encoding of the hash.
+func (h Hash) String() string {
+	return fmt.Sprintf("%032x", []byte(h))
+}
+
 // ShortID returns shortID from Hash
 func (h Hash) ShortID(blockHash Hash) ShortID {
-	result := make(ShortID, ShortIDSize + 2)
+	result := make(ShortID, ShortIDSize+2)
 
 	k0 := binary.LittleEndian.Uint64(blockHash[:8])
 	k1 := binary.LittleEndian.Uint64(blockHash[8:16])
