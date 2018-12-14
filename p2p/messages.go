@@ -9,7 +9,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/dblokhin/gringo/src/consensus"
+	"github.com/dblokhin/gringo/consensus"
 	"github.com/sirupsen/logrus"
 	"io"
 	"net"

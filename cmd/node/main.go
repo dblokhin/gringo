@@ -1,11 +1,11 @@
 package main
 
 import (
-	"p2p"
+	"github.com/dblokhin/gringo/p2p"
 	"github.com/sirupsen/logrus"
+	"github.com/dblokhin/gringo/chain"
+	"github.com/dblokhin/gringo/storage"
 	"os"
-	"chain"
-	"storage"
 )
 
 func init() {

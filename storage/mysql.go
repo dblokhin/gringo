@@ -8,7 +8,7 @@ package storage
 
 import (
 	"database/sql"
-	"github.com/dblokhin/gringo/src/consensus"
+	"github.com/dblokhin/gringo/consensus"
 	_ "github.com/go-sql-driver/mysql"
 	"sync"
 )

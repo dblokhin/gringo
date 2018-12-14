@@ -7,7 +7,7 @@ package chain
 import (
 	"bytes"
 	"errors"
-	"github.com/dblokhin/gringo/src/consensus"
+	"github.com/dblokhin/gringo/consensus"
 	"github.com/sirupsen/logrus"
 	"sync"
 	"time"

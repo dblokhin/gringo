@@ -9,7 +9,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/dblokhin/gringo/src/secp256k1zkp"
+	"github.com/dblokhin/gringo/secp256k1zkp"
 	"github.com/sirupsen/logrus"
 	"github.com/yoss22/bulletproofs"
 	"golang.org/x/crypto/blake2b"

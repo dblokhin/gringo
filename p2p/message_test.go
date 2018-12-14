@@ -3,7 +3,7 @@ package p2p
 import (
 	"bytes"
 	"encoding/hex"
-	"github.com/dblokhin/gringo/src/consensus"
+	"github.com/dblokhin/gringo/consensus"
 	"testing"
 )
 

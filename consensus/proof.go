@@ -9,7 +9,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/dblokhin/gringo/src/cuckoo"
+	"github.com/dblokhin/gringo/cuckoo"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/blake2b"
 	"io"

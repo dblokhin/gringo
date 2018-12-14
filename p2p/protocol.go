@@ -7,7 +7,7 @@ package p2p
 import (
 	"bufio"
 	"errors"
-	"github.com/dblokhin/gringo/src/consensus"
+	"github.com/dblokhin/gringo/consensus"
 	"io"
 )
 
