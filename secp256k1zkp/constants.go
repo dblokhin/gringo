@@ -5,8 +5,8 @@
 package secp256k1zkp
 
 import (
-	. "github.com/yoss22/bulletproofs"
-	"math/big"
+	//. "github.com/yoss22/bulletproofs"
+	//"math/big"
 )
 
 const (
@@ -72,10 +72,10 @@ var (
 	}
 
 	// Generator G as a point.
-	G = Point{
+	/*G = Point{
 		X: new(big.Int).SetBytes(Gx),
 		Y: new(big.Int).SetBytes(Gy),
-	}
+	}*/
 
 	// Generator H
 	Hx = []byte{
@@ -92,10 +92,10 @@ var (
 	}
 
 	// Generator H as a point.
-	H = Point{
+	/*H = Point{
 		X: new(big.Int).SetBytes(Hx),
 		Y: new(big.Int).SetBytes(Hy),
-	}
+	}*/
 
 	// Generator J, for switch commitments (as compressed curve point (3))
 	GENERATOR_J = []byte{

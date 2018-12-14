@@ -1,6 +1,31 @@
 package secp256k1zkp
 
 import (
+	"github.com/yoss22/bulletproofs"
+	"math/big"
+)
+
+// ComputeMessage encodes fee and lockHeight into a 32-byte message.
+func ComputeMessage(fee, lockHeight uint64) [32]byte {
+	return [32]byte{}
+}
+
+type Signature struct {
+	S big.Int
+	R bulletproofs.Point
+}
+
+func VerifySignature(publicKey bulletproofs.Point, message [32]byte, signature Signature) bool {
+	return false
+}
+
+func DecodeSignature(signature [64]byte) Signature {
+	return Signature{}
+}
+
+/*
+
+import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
@@ -184,3 +209,4 @@ func ComputeMessage(fee, lockHeight uint64) [32]byte {
 	binary.BigEndian.PutUint64(msg[24:], lockHeight)
 	return msg
 }
+*/
