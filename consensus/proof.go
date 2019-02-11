@@ -29,12 +29,19 @@ var (
 )
 
 // Validate validates the pow
-func (p *Proof) Validate(header *BlockHeader, cuckooSize uint8) error {
-	logrus.Infof("block POW validate for size %d", cuckooSize)
+func (p *Proof) Validate(header *BlockHeader, cuckooSize uint8,
+	isPrimaryPow bool) error {
 
-	cuckoo := cuckoo.NewCuckaroo(header.bytesWithoutPOW())
-	if cuckoo.Verify(header.POW.Nonces, header.POW.EdgeBits) {
-		return nil
+	if isPrimaryPow {
+		verifier := cuckoo.NewCuckatoo(header.bytesWithoutPOW(), header.POW.EdgeBits)
+		if verifier.Verify(header.POW.Nonces) {
+			return nil
+		}
+	} else {
+		verifier := cuckoo.NewCuckaroo(header.bytesWithoutPOW())
+		if verifier.Verify(header.POW.Nonces, header.POW.EdgeBits) {
+			return nil
+		}
 	}
 
 	return errInvalidPow

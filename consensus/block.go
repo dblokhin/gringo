@@ -1017,12 +1017,7 @@ func (b *BlockHeader) Validate() error {
 		return fmt.Errorf("cuckoo size too small: %d", b.POW.EdgeBits)
 	}
 
-	// The primary POW must have a scaling factor of 1.
-	if isPrimaryPow && b.ScalingDifficulty != 1 {
-		return fmt.Errorf("invalid scaling difficulty: %d", b.ScalingDifficulty)
-	}
-
-	if err := b.POW.Validate(b, b.POW.EdgeBits); err != nil {
+	if err := b.POW.Validate(b, b.POW.EdgeBits, isPrimaryPow); err != nil {
 		return err
 	}
 
