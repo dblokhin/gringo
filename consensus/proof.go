@@ -48,7 +48,7 @@ func (p *Proof) ToDifficulty() Difficulty {
 
 // Hash returns hash of content pow
 func (p *Proof) Hash() []byte {
-	hash := blake2b.Sum256(p.Bytes())
+	hash := blake2b.Sum256(p.ProofBytes())
 	return hash[:]
 }
 
