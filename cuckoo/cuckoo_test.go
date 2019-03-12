@@ -5,6 +5,8 @@
 package cuckoo
 
 import (
+	"encoding/binary"
+	"encoding/hex"
 	"testing"
 )
 
@@ -35,19 +37,50 @@ func TestBlock(t *testing.T) {
 	}
 }
 
-var V1 = []uint32{
-	0x3bbd, 0x4e96, 0x1013b, 0x1172b, 0x1371b, 0x13e6a, 0x1aaa6, 0x1b575,
-	0x1e237, 0x1ee88, 0x22f94, 0x24223, 0x25b4f, 0x2e9f3, 0x33b49, 0x34063,
-	0x3454a, 0x3c081, 0x3d08e, 0x3d863, 0x4285a, 0x42f22, 0x43122, 0x4b853,
-	0x4cd0c, 0x4f280, 0x557d5, 0x562cf, 0x58e59, 0x59a62, 0x5b568, 0x644b9,
-	0x657e9, 0x66337, 0x6821c, 0x7866f, 0x7e14b, 0x7ec7c, 0x7eed7, 0x80643,
-	0x8628c, 0x8949e,
-}
-
 func TestValidSolution(t *testing.T) {
-	header := []byte{49}
-	cuckoo := New(header, 20)
-	if !cuckoo.Verify(V1, 75) {
+	header := [80]byte{}
+
+	// Replace the last four bytes of the key with the nonce.
+	nonce := 20
+	header[len(header)-4] = byte(nonce)
+	header[len(header)-3] = byte(nonce << 8)
+	header[len(header)-2] = byte(nonce << 16)
+	header[len(header)-1] = byte(nonce << 24)
+
+	cuckoo := NewCuckatoo(header[:], 29)
+
+	k0, _ := hex.DecodeString("27580576fe290177")
+	k1, _ := hex.DecodeString("f9ea9b2031f4e76e")
+	k2, _ := hex.DecodeString("1663308c8607868f")
+	k3, _ := hex.DecodeString("b88839b0fa180d0e")
+
+	if binary.BigEndian.Uint64(k0) != cuckoo.v[0] {
+		t.Errorf("Key derivation failed, got %x expected %x", cuckoo.v[0],
+			binary.BigEndian.Uint64(k0))
+	}
+	if binary.BigEndian.Uint64(k1) != cuckoo.v[1] {
+		t.Errorf("Key derivation failed, got %x expected %x", cuckoo.v[1],
+			binary.BigEndian.Uint64(k1))
+	}
+	if binary.BigEndian.Uint64(k2) != cuckoo.v[2] {
+		t.Errorf("Key derivation failed, got %x expected %x", cuckoo.v[2],
+			binary.BigEndian.Uint64(k2))
+	}
+	if binary.BigEndian.Uint64(k3) != cuckoo.v[3] {
+		t.Errorf("Key derivation failed, got %x expected %x", cuckoo.v[3],
+			binary.BigEndian.Uint64(k3))
+	}
+
+	var V1 = []uint32{
+		0x48a9e2, 0x9cf043, 0x155ca30, 0x18f4783, 0x248f86c, 0x2629a64, 0x5bad752, 0x72e3569,
+		0x93db760, 0x97d3b37, 0x9e05670, 0xa315d5a, 0xa3571a1, 0xa48db46, 0xa7796b6, 0xac43611,
+		0xb64912f, 0xbb6c71e, 0xbcc8be1, 0xc38a43a, 0xd4faa99, 0xe018a66, 0xe37e49c, 0xfa975fa,
+		0x11786035, 0x1243b60a, 0x12892da0, 0x141b5453, 0x1483c3a0, 0x1505525e, 0x1607352c,
+		0x16181fe3, 0x17e3a1da, 0x180b651e, 0x1899d678, 0x1931b0bb, 0x19606448, 0x1b041655,
+		0x1b2c20ad, 0x1bd7a83c, 0x1c05d5b0, 0x1c0b9caa,
+	}
+
+	if !cuckoo.Verify(V1) {
 		t.Error("Verify failed")
 	}
 }

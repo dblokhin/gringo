@@ -33,7 +33,7 @@ func WriteMessage(w io.Writer, msg Message) (uint64, error) {
 	data := msg.Bytes()
 
 	header := Header{
-		magic: consensus.MagicCode,
+		magic: consensus.MagicCodeFloonet,
 		Type:  msg.Type(),
 		Len:   uint64(len(data)),
 	}

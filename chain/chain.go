@@ -6,12 +6,22 @@ package chain
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"github.com/dblokhin/gringo/consensus"
 	"github.com/sirupsen/logrus"
 	"sync"
 	"time"
 )
+
+// mustDecodeHex decodes the hex-encoded string s and panics on failure.
+func mustDecodeHex(s string) []byte {
+	decoded, err := hex.DecodeString(s)
+	if err != nil {
+		panic(err)
+	}
+	return decoded
+}
 
 // Testnet1 genesis block
 var Testnet1 = consensus.Block{
@@ -163,6 +173,35 @@ var Mainnet = consensus.Block{
 				0x6061, 0x60f9, 0x61d7, 0x6318, 0x63a1, 0x63fb,
 				0x649b, 0x64e5, 0x65a1, 0x6b69, 0x70f8, 0x71c7,
 				0x71cd, 0x7492, 0x7b11, 0x7db8, 0x7f29, 0x7ff8,
+			},
+		},
+	},
+}
+
+// Floonet genesis block
+var Floonet = consensus.Block{
+	Header: consensus.BlockHeader{
+		Version:           1,
+		Height:            0,
+		Previous:          mustDecodeHex("00000000000000000017ff4903ef366c8f62e3151ba74e41b8332a126542f538"),
+		Timestamp:         time.Date(2018, 12, 28, 20, 48, 4, 0, time.UTC),
+		TotalDifficulty:   100000,
+		ScalingDifficulty: 1856,
+
+		UTXORoot:       mustDecodeHex("73b5e0a05ea9e1e4e33b8f1c723bc5c10d17f07042c2af7644f4dbb61f4bc556"),
+		RangeProofRoot: mustDecodeHex("667a3ba22f237a875f67c9933037c8564097fa57a3e75be507916de28fc0da26"),
+		KernelRoot:     mustDecodeHex("cfdddfe2d938d0026f8b1304442655bbdddde175ff45ddf44cb03bcb0071a72d"),
+
+		Nonce: 23,
+		POW: consensus.Proof{
+			EdgeBits: 29,
+			Nonces: []uint32{
+				16994232, 22975978, 32664019, 44016212, 50238216, 57272481, 85779161,
+				124272202, 125203242, 133907662, 140522149, 145870823, 147481297, 164952795,
+				177186722, 183382201, 197418356, 211393794, 239282197, 239323031, 250757611,
+				281414565, 305112109, 308151499, 357235186, 374041407, 389924708, 390768911,
+				401322239, 401886855, 406986280, 416797005, 418935317, 429007407, 439527429,
+				484809502, 486257104, 495589543, 495892390, 525019296, 529899691, 531685572,
 			},
 		},
 	},

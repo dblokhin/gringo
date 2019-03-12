@@ -5,7 +5,8 @@
 package consensus
 
 // MagicCode is expected in the header of every message
-var MagicCode = [2]byte{0x54, 0x34}
+var MagicCodeFloonet = [2]byte{83, 59}
+var MagicCodeMainnet = [2]byte{97, 61}
 
 const (
 	// protocolVersion version of grin p2p protocol

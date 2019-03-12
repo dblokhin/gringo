@@ -246,7 +246,8 @@ func shakeByHand(conn net.Conn) (*shake, error) {
 		SenderAddr:      sender,
 		ReceiverAddr:    receiver,
 		UserAgent:       userAgent,
-		Genesis:         chain.Testnet4.Hash(),
+		// FIXME: This needs to be configurable.
+		Genesis: chain.Floonet.Hash(),
 	}
 
 	// Send own hand
